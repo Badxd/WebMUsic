@@ -17,15 +17,15 @@ async def run_webapp(bot: Bad, stop_event: asyncio.Event):
 
     cfg = uvicorn.Config(
         app,
-        host      = "0.0.0.0",
-        port      = 8000,
+        host      = config.HOST,
+        port      = config.PORT,   # Heroku sets $PORT dynamically — must bind to it
         log_level = "warning",
         loop      = "none",
     )
     server = uvicorn.Server(cfg)
     server.install_signal_handlers = lambda: None
 
-    LOGGER.info("WebApp running on :8000 ✅")
+    LOGGER.info(f"WebApp running on :{config.PORT} ✅")
 
     async def watch_stop():
         await stop_event.wait()

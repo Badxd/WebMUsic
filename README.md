@@ -3,6 +3,44 @@
 A fast, powerful Telegram music bot with a WebApp player.  
 Play YouTube songs live in any group — listeners sync in real time via WebSocket.
 
+[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/your-username/BadMusic)
+
+> Push this project to your own GitHub repo first, then update the
+> `repository` field in `app.json` (and the link above) to point to
+> it — Heroku's button reads `app.json` from that repo to build the
+> deploy form automatically.
+
+---
+
+## 🟣 Deploy on Heroku
+
+This repo ships ready for Heroku: `app.json`, `Procfile`, `runtime.txt`.
+
+1. Push the project to a GitHub repo.
+2. Click **Deploy to Heroku** (button above) or go to
+   `https://heroku.com/deploy?template=<your-repo-url>`.
+3. Fill in `API_ID`, `API_HASH`, `BOT_TOKEN`, `OWNER_ID` (the required
+   ones — everything else, including `STRING_SESSION` for Voice Chat,
+   is optional and can be added later from **Settings → Config Vars**).
+4. Deploy. Once it's live, copy your app's URL
+   (`https://your-app.herokuapp.com`) into the `WEBAPP_URL` config var
+   and restart the dyno so the mini web player's links are correct.
+5. `ffmpeg` is installed automatically via the ffmpeg buildpack in
+   `app.json` — no extra setup needed.
+
+**Notes for Heroku specifically:**
+- It's a **web** dyno (`Procfile`) — the app binds to Heroku's `$PORT`
+  automatically via `config.PORT`, so the free/eco dyno won't be
+  killed for not binding.
+- Heroku's filesystem is **ephemeral** — if `MONGO_URL` is left empty,
+  the local `database.json` / downloaded songs are wiped on every
+  restart/dyno-cycle. For anything you want to persist (admins,
+  blacklist, favorites, the `/vcmusic` on/off switches, profiles),
+  set `MONGO_URL` to a free MongoDB Atlas cluster.
+- Eco/Basic dynos sleep after inactivity on some plans — fine for a
+  hobby bot, but for a bot that must always be instantly responsive
+  use at least a Basic dyno with no sleep, or a different host.
+
 ---
 
 ## ✨ Features
