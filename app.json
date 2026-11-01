@@ -1,10 +1,10 @@
 {
   "name": "Bad Music Bot",
   "description": "Telegram music bot with a mini WebApp room player + real Voice Chat streaming (PyTgCalls), like ShizuMusic.",
-  "repository": "https://github.com/your-username/BadMusic",
+  "repository": "https://github.com/Badxd/WebMUsic",
   "logo": "https://files.catbox.moe/skgu94.jpg",
   "keywords": ["python", "telegram", "music-bot", "pyrogram", "pytgcalls", "fastapi"],
-  "stack": "heroku-22",
+  "stack": "heroku-24",
   "buildpacks": [
     { "url": "heroku/python" },
     { "url": "https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest.git" }
