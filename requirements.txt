@@ -1,5 +1,5 @@
 # ── Telegram Bot ──────────────────────────────────────────
-kuzigram 
+kurigram
 TgCrypto
 
 # ── Voice Chat Streaming (real VC audio, like ShizuMusic) ──
