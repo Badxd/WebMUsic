@@ -12,8 +12,8 @@ def start_kb(bot_username: str) -> InlineKeyboardMarkup:
             url=f"https://t.me/{bot_username}?startgroup=true",
         )],
         [
-            InlineKeyboardButton("🛡️ sᴜᴩᴩᴏʀᴛ", url=config.SUPPORT_CHAT),
-            InlineKeyboardButton("🛡️ ᴜᴘᴅᴀᴛᴇ", url=config.CHANNEL_CHAT),
+            InlineKeyboardButton("🛡️ sᴜᴩᴩᴏʀᴛ", url=config.SUPPORT_GROUP),
+            InlineKeyboardButton("🛡️ ᴜᴘᴅᴀᴛᴇ", url=config.UPDATES_CHANNEL),
             
         ],
         [InlineKeyboardButton("📖 ʜᴇʟᴩ",    callback_data="help_menu"),],
@@ -32,14 +32,14 @@ def help_kb() -> InlineKeyboardMarkup:
             InlineKeyboardButton("📶 ᴘɪɴɢ",   callback_data="hb_ping"),
         ],
         [InlineKeyboardButton("⚙️ sᴇᴛᴛɪɴɢs", callback_data="hb_settings")],
-        [InlineKeyboardButton("🛡️ sᴜᴩᴩᴏʀᴛ",  url=config.SUPPORT_CHAT)],
+        [InlineKeyboardButton("🛡️ sᴜᴩᴩᴏʀᴛ",  url=config.SUPPORT_GROUP)],
         [InlineKeyboardButton("✯ ᴄʟᴏsᴇ ✯",   callback_data="close")],
     ])
 
 
 def help_back_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🛡️ sᴜᴩᴩᴏʀᴛ", url=config.SUPPORT_CHAT)],
+        [InlineKeyboardButton("🛡️ sᴜᴩᴩᴏʀᴛ", url=config.SUPPORT_GROUP)],
         [InlineKeyboardButton("« ʙᴀᴄᴋ",      callback_data="help_menu")],
     ])
 
@@ -58,7 +58,7 @@ def stream_kb(chat_id: int, played: str = "0:00",
         ],
         [InlineKeyboardButton("🎧 ᴏᴩᴇɴ ᴡᴇʙᴀᴩᴩ", url=wl or config.MINIAPP_LINK)],
         [
-            InlineKeyboardButton("🛡️ sᴜᴩᴩᴏʀᴛ", url=config.SUPPORT_CHAT),
+            InlineKeyboardButton("🛡️ sᴜᴩᴩᴏʀᴛ", url=config.SUPPORT_GROUP),
             InlineKeyboardButton("✯ ᴄʟᴏsᴇ ✯",  callback_data="close"),
         ],
     ])
@@ -69,7 +69,7 @@ def queue_kb(wl: str = "") -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("🎧 ᴊᴏɪɴ ʀᴏᴏᴍ ᴛᴏ ʟɪsᴛᴇɴ", url=wl or config.MINIAPP_LINK)],
         [
-            InlineKeyboardButton("🛡️ sᴜᴩᴩᴏʀᴛ", url=config.SUPPORT_CHAT),
+            InlineKeyboardButton("🛡️ sᴜᴩᴩᴏʀᴛ", url=config.SUPPORT_GROUP),
             InlineKeyboardButton("✯ ᴄʟᴏsᴇ ✯",  callback_data="close"),
         ],
     ])

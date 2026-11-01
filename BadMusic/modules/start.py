@@ -79,7 +79,7 @@ async def help_cmd(client: Client, message: Message):
 
 async def _send_help(client: Client, chat_id: int, msg_to_edit=None):
     _ = get_string("en")
-    text = _["help_text"].format(support=config.SUPPORT_CHAT)
+    text = _["help_text"].format(support=config.SUPPORT_GROUP)
     kb   = help_kb()
 
     if msg_to_edit:

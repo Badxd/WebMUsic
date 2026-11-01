@@ -37,7 +37,7 @@
       "required": false,
       "value": "0"
     },
-    "SUPPORT_CHAT": {
+    "SUPPORT_GROUP": {
       "description": "Your support group/channel link",
       "required": false,
       "value": "https://t.me/PBXCHATS"
