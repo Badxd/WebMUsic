@@ -1,0 +1,127 @@
+# ──────────────────────────────────────────────
+# BadMusic Bot — English Strings
+# Copyright (C) 2024 Badhacker98
+# NOTE: No nested markdown (bold+code together) — causes ENTITY_BOUNDS_INVALID
+# ──────────────────────────────────────────────
+
+# ── Start / Help ─────────────────────────────
+start_caption: |
+  Hey [{first_name}](tg://user?id={user_id}) 🥀
+
+  I am **Bad Music** !
+
+  A fast & powerful Telegram music player bot.
+
+  Click Help button to see all commands.
+
+start_group: "Thanks for adding me! Use /play to play music. 🎵"
+
+help_text: |
+  Choose a category for help.
+  Support: {support}
+
+help_admin: |
+  **Admin Commands:**
+  /pause /resume /skip /stop
+  /end — end session + clear all
+  /queue — view queue
+  /clean — clear cache
+  /fav — save favorite
+  /setting — room settings
+  /active — active rooms (Owner only)
+
+help_auth: |
+  **Auth Commands:**
+  /auth — authorize user (reply)
+  /unauth — remove auth (reply)
+  /blacklist — block user (reply)
+
+help_play: |
+  **Play Commands:**
+  /play songname — search and play
+  /play youtube-link — YouTube link
+  /song songname — download and send
+  Inline: @BadMusicBot songname
+
+help_ping: "/ping — check bot speed"
+
+# ── Playback ─────────────────────────────────
+now_playing: |
+  **Now Streaming**
+
+  **Title:** [{title}]({link})
+  **Duration:** {duration}
+  **By:** {requester}
+
+queued: |
+  Added to Queue at #{pos}
+
+  Title: [{title}]({link})
+  Duration: {duration}
+  By: {requester}
+
+paused:   "Stream paused.\nBy: {name}"
+resumed:  "Stream resumed.\nBy: {name}"
+stopped:  "Stream ended.\nBy: {name}"
+skipped:  "Stream skipped.\nBy: {name}"
+
+already_paused:  "Music is already paused."
+already_resumed: "Music is already playing."
+no_more_songs:   "No more songs in queue. Use /play to add more!"
+queue_empty:     "Queue is empty."
+no_song_playing: "No song playing right now."
+
+session_ended: |
+  Session ended by [{name}](tg://user?id={user_id}).
+  Use /play to start a new session.
+
+# ── Search / Download ─────────────────────────
+searching:     "Searching..."
+downloading:   "Downloading..."
+no_results:    "No results found."
+dl_failed:     "Download failed. Try again."
+error_general: "An error occurred. Try again."
+usage_play:    "Usage: /play song name or YouTube link"
+usage_song:    "Usage: /song song name or YouTube link"
+pinging:       "Pinging..."
+song_dl_start: "Downloading song to send..."
+song_dl_done:  "Here is your song!"
+song_dl_fail:  "Could not download this song. Try another."
+
+# ── Admin / Auth ─────────────────────────────
+admin_only:   "This command is for admins only."
+not_admin:    "You need admin rights."
+blacklisted:  "You are blacklisted."
+owner_only:   "This command is only for the bot owner."
+reply_needed: "Reply to a user message to use this."
+
+auth_added:   "Added [{name}](tg://user?id={user_id}) as admin."
+auth_removed: "Removed [{name}](tg://user?id={user_id})."
+blacklisted_user: "Blocked [{name}](tg://user?id={user_id})."
+cache_cleaned: "Cache cleaned!"
+
+fav_added:  "Added to favorites!\n{title}"
+fav_failed: "Could not save (no DB)."
+
+# ── Active Rooms ──────────────────────────────
+active_header: "**Active Music Rooms:**\n\n"
+active_row:    "**{i}.** `{chat_id}` — {title} | {listeners} listeners\n"
+active_none:   "No active music rooms right now."
+active_footer: "\nTotal: {count} room(s)"
+
+# ── Maintenance ──────────────────────────────
+maintenance: "Bot is under maintenance. Please wait."
+
+# ── Join Announce ─────────────────────────────
+join_announce: |
+  {username} joined the room.
+  Listeners: {listeners}
+  Now: {song_title}
+
+# ── Settings ──────────────────────────────────
+settings_text: |
+  **Room Settings**
+
+  {join_emoji} Join Announcements
+  {queue_emoji} Queue Announcements
+  
