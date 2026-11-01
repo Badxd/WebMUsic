@@ -21,6 +21,7 @@ aiofiles==24.1.0
 
 # ── YouTube Search (no API key needed, actively maintained) ─
 yt-dlp
+youtube-search-python
 
 # ── Utils ──────────────────────────────────────────────────
 python-dotenv==1.1.0
