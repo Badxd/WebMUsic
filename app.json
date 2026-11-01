@@ -47,6 +47,16 @@
       "required": false,
       "value": ""
     },
+    "API_URL": {
+      "description": "Base URL of YOUR OWN song-download API (same system as ShizuMusic) — e.g. https://your-api.example.com, no trailing slash. Leave empty to auto-use a public fallback (less reliable).",
+      "required": false,
+      "value": ""
+    },
+    "API_KEY": {
+      "description": "API key for the download API above — ADD YOUR OWN. Without this the download API returns 401 and every /play fails until it falls back to plain yt-dlp.",
+      "required": false,
+      "value": ""
+    },
     "MONGO_URL": {
       "description": "MongoDB connection URL (e.g. MongoDB Atlas). Leave empty to use a local database.json — note this resets on every Heroku dyno restart, so MongoDB is recommended for production.",
       "required": false,

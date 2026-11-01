@@ -44,6 +44,7 @@ help_play: |
   Inline: @BadMusicBot songname
 
 help_ping: "/ping — check bot speed"
+help_settings_hint: "ᴜsᴇ /setting ɪɴ ʏᴏᴜʀ ɢʀᴏᴜᴩ"
 
 # ── Playback ─────────────────────────────────
 now_playing: |

@@ -12,6 +12,26 @@ Play YouTube songs live in any group — listeners sync in real time via WebSock
 
 ---
 
+## 🚀 Download API (fixes "download token failed: 401")
+
+This bot downloads songs the same way ShizuMusic does: your own
+`API_URL` + `API_KEY`, sent as `?api_key=...` on every request. Set
+both in your env (see `sample.env` / `app.json`). If you don't set
+them, the bot still works — it falls back to plain `yt-dlp`
+automatically, just a bit slower.
+
+## 🌍 Deploy anywhere
+
+Ready-made configs are included for:
+- **Heroku** → `app.json` + `Procfile` + `runtime.txt`
+- **Render** → `render.yaml`
+- **Railway** → `railway.json`
+- **Koyeb** → `koyeb.yaml`
+
+All four read the same env vars (`API_ID`, `API_HASH`, `BOT_TOKEN`,
+`OWNER_ID`, `STRING_SESSION`, `MONGO_URL`, `API_URL`, `API_KEY`, …) —
+fill them in on whichever platform's dashboard you use.
+
 ## 🟣 Deploy on Heroku
 
 This repo ships ready for Heroku: `app.json`, `Procfile`, `runtime.txt`.

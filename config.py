@@ -40,8 +40,13 @@ DB_NAME      = os.getenv("DB_NAME",      "BadMusic")
 PORT = int(os.getenv("PORT", "8000"))
 HOST = os.getenv("HOST",     "0.0.0.0")
 
-# ── Downloads ──────────────────────────────────────────────
+# ── Downloads (same system as ShizuMusic: API_URL + API_KEY) ─
+# Set your own download API's base URL + key as env vars — nothing is
+# hard-coded. If left empty, the bot auto-discovers a public fallback
+# URL (old behaviour) and falls back to plain yt-dlp if that fails too.
 DOWNLOAD_DIR     = "static/downloads"
+API_URL          = os.getenv("API_URL", "").strip().rstrip("/")
+API_KEY          = os.getenv("API_KEY", "").strip()
 FALLBACK_API_URL = "https://shrutibots.site"
 API_URL_PASTEBIN = "https://pastebin.com/raw/rLsBhAQa"
 

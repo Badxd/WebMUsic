@@ -1,17 +1,33 @@
 """
 services/downloader.py — Audio download + utilities + auto-cleanup
+
+Download flow (same system as ShizuMusic):
+  1. If API_URL + API_KEY are set → single request to
+     {API_URL}/download?url=<id>&type=audio&api_key=<API_KEY>
+     (this is exactly what was returning 401 before — the old code
+     never sent an api_key at all, because no API_KEY config existed)
+  2. If that's not configured, or it fails → plain yt-dlp, so the bot
+     still works even with nothing set up.
+  3. Nothing is hard-coded: set your own API_URL / API_KEY via env.
 """
 import asyncio
 import logging
 import os
 import re
+import sys
 import time
 from typing import Optional
 
 import aiofiles
 import aiohttp
 
-from config import DOWNLOAD_DIR, FALLBACK_API_URL, API_URL_PASTEBIN
+from config import (
+    API_KEY,
+    API_URL,
+    API_URL_PASTEBIN,
+    DOWNLOAD_DIR,
+    FALLBACK_API_URL,
+)
 
 logger = logging.getLogger("Downloader")
 
@@ -19,6 +35,12 @@ _api_url: Optional[str] = None
 
 
 async def _get_api_url() -> str:
+    """Resolve which download-API base URL to use.
+    Priority: your own API_URL (env) → pastebin-discovered fallback.
+    """
+    if API_URL:
+        return API_URL
+
     global _api_url
     if _api_url:
         return _api_url
@@ -69,75 +91,134 @@ def get_thumbnail_url(video_id: str) -> str:
     return f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
 
 
+def _cached(video_id: str) -> Optional[str]:
+    path = os.path.join(DOWNLOAD_DIR, f"{video_id}.mp3")
+    if os.path.exists(path) and os.path.getsize(path) > 1024:
+        return f"/static/downloads/{video_id}.mp3"
+    return None
+
+
+async def _download_via_api(video_id: str) -> Optional[str]:
+    """Single request: {API_URL}/download?url=<id>&type=audio&api_key=<KEY>
+    — same system ShizuMusic uses. Returns None (never raises) so the
+    caller can fall back to yt-dlp."""
+    api_url = await _get_api_url()
+    file_path = os.path.join(DOWNLOAD_DIR, f"{video_id}.mp3")
+    tmp = file_path + ".part"
+    try:
+        params = {"url": video_id, "type": "audio"}
+        if API_KEY:
+            params["api_key"] = API_KEY
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"{api_url}/download",
+                params=params,
+                timeout=aiohttp.ClientTimeout(total=120),
+            ) as resp:
+                if resp.status != 200:
+                    logger.warning(
+                        f"[api] download failed: HTTP {resp.status} "
+                        f"(check API_URL / API_KEY — set them in your env)"
+                    )
+                    return None
+                async with aiofiles.open(tmp, "wb") as f:
+                    async for chunk in resp.content.iter_chunked(65536):
+                        await f.write(chunk)
+
+        size = os.path.getsize(tmp) if os.path.exists(tmp) else 0
+        bad = size < 4096
+        if not bad:
+            with open(tmp, "rb") as fh:
+                bad = fh.read(1) in (b"{", b"<", b"[")  # looks like a JSON/HTML error body
+        if bad:
+            logger.warning("[api] no media returned (check API_URL / API_KEY)")
+            _safe_remove(tmp)
+            return None
+
+        os.replace(tmp, file_path)
+        logger.info(f"[api] downloaded {video_id} ({size // 1024} KB)")
+        return f"/static/downloads/{video_id}.mp3"
+
+    except asyncio.TimeoutError:
+        logger.warning(f"[api] timeout for {video_id}")
+    except Exception as e:
+        logger.error(f"[api] download error: {e}")
+    _safe_remove(tmp)
+    return None
+
+
+async def _download_via_ytdlp(video_id: str) -> Optional[str]:
+    """Fallback: plain yt-dlp, no API needed at all."""
+    os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+    out_tmpl = os.path.join(DOWNLOAD_DIR, f"{video_id}.%(ext)s")
+    cmd = [
+        sys.executable, "-m", "yt_dlp",
+        "--quiet", "--no-warnings", "--no-playlist", "--geo-bypass",
+        "--no-overwrites", "--no-check-certificates",
+        "-f", "bestaudio/best",
+        "-x", "--audio-format", "mp3",
+        "-o", out_tmpl,
+        "--", f"https://www.youtube.com/watch?v={video_id}",
+    ]
+    proc = None
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *cmd, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.PIPE,
+        )
+        _, err = await asyncio.wait_for(proc.communicate(), timeout=180)
+        if proc.returncode != 0:
+            tail = (err or b"").decode(errors="ignore").strip().splitlines()[-1:] or [""]
+            logger.warning(f"[yt-dlp] failed for {video_id} (exit {proc.returncode}): {tail[0]}")
+            return None
+        found = _cached(video_id)
+        if found:
+            logger.info(f"[yt-dlp] downloaded {video_id}")
+        return found
+    except asyncio.TimeoutError:
+        logger.warning(f"[yt-dlp] timed out for {video_id}")
+        if proc and proc.returncode is None:
+            proc.kill()
+        return None
+    except Exception as e:
+        logger.error(f"[yt-dlp] error: {e}")
+        return None
+
+
+def _safe_remove(path: str):
+    try:
+        if os.path.exists(path):
+            os.remove(path)
+    except Exception:
+        pass
+
+
 async def download_song(link: str) -> Optional[str]:
     """
     Download audio for a YouTube link to local disk.
     Returns /static/downloads/{id}.mp3 path on success, None on failure.
-    Uses cached file if already downloaded.
+    Uses cached file if already downloaded. Tries the API first (if
+    configured), then falls back to plain yt-dlp automatically.
     """
-    api_url  = await _get_api_url()
     video_id = extract_video_id(link)
     if not video_id:
         logger.error(f"download_song: invalid link={link}")
         return None
 
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
-    file_path = os.path.join(DOWNLOAD_DIR, f"{video_id}.mp3")
 
-    # Return cached file if valid
-    if os.path.exists(file_path) and os.path.getsize(file_path) > 1024:
-        return f"/static/downloads/{video_id}.mp3"
+    cached = _cached(video_id)
+    if cached:
+        return cached
 
-    try:
-        async with aiohttp.ClientSession() as session:
-            # Step 1: get download token
-            async with session.get(
-                f"{api_url}/download",
-                params={"url": video_id, "type": "audio"},
-                timeout=aiohttp.ClientTimeout(total=60),
-            ) as resp:
-                if resp.status != 200:
-                    logger.error(f"download token failed: {resp.status}")
-                    return None
-                data = await resp.json()
+    api_set = bool(API_KEY)  # API_URL falls back to pastebin-discovery even if unset
+    if api_set:
+        got = await _download_via_api(video_id)
+        if got:
+            return got
+        logger.info(f"[dl] API failed, trying yt-dlp for {video_id}")
 
-            token = data.get("download_token")
-            if not token:
-                logger.error("no download_token in response")
-                return None
-
-            # Step 2: stream to disk
-            async with session.get(
-                f"{api_url}/stream/{video_id}?type=audio",
-                headers={"X-Download-Token": token},
-                timeout=aiohttp.ClientTimeout(total=300),
-            ) as stream:
-                if stream.status != 200:
-                    logger.error(f"stream failed: {stream.status}")
-                    return None
-                async with aiofiles.open(file_path, "wb") as f:
-                    async for chunk in stream.content.iter_chunked(16384):
-                        await f.write(chunk)
-
-        if os.path.exists(file_path) and os.path.getsize(file_path) > 1024:
-            return f"/static/downloads/{video_id}.mp3"
-
-        logger.error("downloaded file empty")
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        return None
-
-    except asyncio.TimeoutError:
-        logger.error(f"timeout for {video_id}")
-    except Exception as e:
-        logger.error(f"download_song: {e}")
-
-    if os.path.exists(file_path):
-        try:
-            os.remove(file_path)
-        except Exception:
-            pass
-    return None
+    return await _download_via_ytdlp(video_id)
 
 
 # ─────────────────────────────────────────────────────────
@@ -200,4 +281,3 @@ async def get_disk_usage_mb() -> float:
     except Exception:
         pass
     return total / (1024 * 1024)
-    

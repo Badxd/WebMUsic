@@ -106,7 +106,7 @@ async def help_callback(client: Client, cb: CallbackQuery):
     data = cb.data
 
     if data == "hb_settings":
-        await cb.answer("ᴜsᴇ /setting ɪɴ ʏᴏᴜʀ ɢʀᴏᴜᴩ", show_alert=True)
+        await cb.answer(_["help_settings_hint"], show_alert=True)
         return
 
     key_map = {

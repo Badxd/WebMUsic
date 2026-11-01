@@ -1,0 +1,60 @@
+services:
+  - type: web
+    name: BadMusicBot
+    env: python
+    plan: free
+
+    buildCommand: "pip3 install --no-cache-dir --upgrade --requirement requirements.txt"
+    startCommand: "python3 main.py"
+
+    envVars:
+      - key: API_ID
+        sync: false
+
+      - key: API_HASH
+        sync: false
+
+      - key: BOT_TOKEN
+        sync: false
+
+      - key: OWNER_ID
+        sync: false
+
+      - key: LOGGER_ID
+        sync: false
+
+      - key: STRING_SESSION
+        sync: false
+
+      - key: MONGO_URL
+        sync: false
+
+      - key: DB_NAME
+        value: BadMusic
+
+      - key: API_URL
+        sync: false
+
+      - key: API_KEY
+        sync: false
+
+      - key: UPDATES_CHANNEL
+        value: https://t.me/PBX_UPDATE
+
+      - key: SUPPORT_GROUP
+        value: https://t.me/PBXCHATS
+
+      - key: WEBAPP_URL
+        sync: false
+
+      - key: MINIAPP_LINK
+        sync: false
+
+      - key: START_IMAGE
+        value: https://files.catbox.moe/skgu94.jpg
+
+      - key: PYTHON_VERSION
+        value: 3.11.9
+
+      - key: PORT
+        value: "10000"
