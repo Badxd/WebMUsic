@@ -15,6 +15,8 @@ API_HASH     = os.getenv("API_HASH",     "YOUR_API_HASH")
 BOT_TOKEN    = os.getenv("BOT_TOKEN",    "YOUR_BOT_TOKEN_HERE")
 OWNER_ID     = int(os.getenv("OWNER_ID", "0"))
 LOGGER_ID    = int(os.getenv("LOGGER_ID", "0"))
+UPDATES_CHANNEL  = os.getenv("UPDATES_CHANNEL", "https://t.me/PBX_UPDATE")
+SUPPORT_GROUP    = os.getenv("SUPPORT_GROUP", "https://t.me/PBXCHATS")
 SUPPORT_CHAT = os.getenv("SUPPORT_CHAT", "https://t.me/PBXCHATS")
 
 # ── Assistant / Voice-Chat (PyTgCalls) ──────────────────────
