@@ -32,10 +32,27 @@ OWNER = config.OWNER_ID
 # Mirrors ShizuMusic: a second account joins the group's VC and
 # streams the same file that is playing in the web room, so a song
 # plays in the Telegram Voice Chat AND in the mini web player at once.
+#
+# IMPORTANT: Pyrogram's Client binds itself to whatever asyncio loop
+# is running at the moment it is constructed. Building it here, at
+# *module import time*, happens BEFORE `asyncio.run(main())` creates
+# the real loop — the Client then silently attaches to the wrong
+# loop, and `assistant.start()` later crashes with:
+#   "RuntimeError: Task ... got Future ... attached to a different loop"
+# So we no longer construct it here. `create_assistant()` is a lazy
+# factory — main.py calls it from *inside* the running loop instead
+# (exactly like `bot = Bad()` already does for the main bot).
 assistant = None
 call_py   = None
 
-if config.VC_ENABLED:
+
+def create_assistant():
+    """Build the assistant Client + PyTgCalls instance. Must be called
+    from inside the running asyncio loop (see main.py: start_vc)."""
+    global assistant, call_py
+    if not config.VC_ENABLED:
+        LOGGER.warning("STRING_SESSION not set — Voice Chat streaming disabled, web room only.")
+        return None, None
     try:
         from pytgcalls import PyTgCalls
 
@@ -48,12 +65,12 @@ if config.VC_ENABLED:
         )
         call_py = PyTgCalls(assistant)
         LOGGER.info("Assistant + PyTgCalls initialised ✅")
+        return assistant, call_py
     except Exception as e:
         LOGGER.warning(f"VC init skipped (assistant/pytgcalls not ready): {e}")
         assistant = None
         call_py   = None
-else:
-    LOGGER.warning("STRING_SESSION not set — Voice Chat streaming disabled, web room only.")
+        return None, None
 
 
 # ── Bot Client ─────────────────────────────────────────────

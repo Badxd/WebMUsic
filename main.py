@@ -5,7 +5,7 @@ import sys
 import traceback
 
 import config
-from BadMusic import Bad, LOGGER, assistant, call_py
+from BadMusic import Bad, LOGGER
 
 # ── FastAPI WebApp ────────────────────────────────────────
 async def run_webapp(bot: Bad, stop_event: asyncio.Event):
@@ -38,15 +38,26 @@ async def run_webapp(bot: Bad, stop_event: asyncio.Event):
 # ── Voice Chat (assistant + PyTgCalls) ─────────────────────
 async def start_vc(bot: Bad):
     """
-    Starts the assistant userbot and PyTgCalls, then wires
+    Builds + starts the assistant userbot and PyTgCalls, then wires
     RoomsManager → VC so every song also plays in the group's real
     Voice Chat (same file the web room is streaming). Safe to skip:
     if STRING_SESSION isn't set, the bot still runs web-room-only,
     exactly like before.
+
+    Returns the assistant Client (or None) so main() can stop it
+    cleanly on shutdown.
+
+    NOTE: the assistant Client is created HERE, inside the running
+    event loop (via create_assistant()) — not at module import time —
+    otherwise Pyrogram binds it to the wrong asyncio loop and
+    assistant.start() crashes with "attached to a different loop".
     """
-    if not config.VC_ENABLED or assistant is None or call_py is None:
+    from BadMusic import create_assistant
+
+    assistant, call_py = create_assistant()
+    if assistant is None or call_py is None:
         LOGGER.warning("Voice Chat disabled (no STRING_SESSION) — web room only ✅")
-        return
+        return None
 
     from core.player import rooms_manager
     from core.vc_manager import vc_manager
@@ -62,9 +73,11 @@ async def start_vc(bot: Bad):
 
         rooms_manager.set_vc_sync_callback(vc_sync_handler)
         LOGGER.info("Voice Chat streaming ENABLED — VC + Web room are now in sync ✅")
+        return assistant
     except Exception as e:
         LOGGER.error(f"Voice Chat start failed, continuing web-room-only: {e}")
         traceback.print_exc()
+        return None
 
 
 # ── Main ──────────────────────────────────────────────────
@@ -121,7 +134,7 @@ async def main():
         stop_event.set()
         sys.exit(1)
 
-    await start_vc(bot)
+    vc_assistant = await start_vc(bot)
 
     await stop_event.wait()
 
@@ -130,9 +143,9 @@ async def main():
         await bot.stop()
     except Exception as e:
         LOGGER.warning(f"Bot stop error: {e}")
-    if assistant is not None:
+    if vc_assistant is not None:
         try:
-            await assistant.stop()
+            await vc_assistant.stop()
         except Exception as e:
             LOGGER.warning(f"Assistant stop error: {e}")
     LOGGER.info("Goodbye! 👋")
