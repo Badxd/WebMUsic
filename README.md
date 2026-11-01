@@ -3,7 +3,7 @@
 A fast, powerful Telegram music bot with a WebApp player.  
 Play YouTube songs live in any group — listeners sync in real time via WebSocket.
 
-[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/your-username/BadMusic)
+[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/Badxd/WebMUsic)
 
 > Push this project to your own GitHub repo first, then update the
 > `repository` field in `app.json` (and the link above) to point to
