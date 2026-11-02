@@ -36,6 +36,12 @@ def make_progress_bar(played: str, dur: str) -> str:
         (60, 70, "——————◉———"), (70, 80, "———————◉——"),
         (80, 95, "————————◉—"), (95, 101, "—————————◉"),
     ]
+    # pct == 0 must hit the FIRST bucket (circle at the very start) —
+    # "lo < pct" excluded it before, so it fell through to the LAST
+    # bucket by accident and showed the bar as if the song had
+    # already finished, right from 0:00.
+    if pct <= 0:
+        return bars[0][2]
     for lo, hi, bar in bars:
         if lo < pct <= hi:
             return bar

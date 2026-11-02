@@ -2,6 +2,7 @@
 # Owner https://t.me/ll_BAD_MUNDA_ll
 # Original logic from thumbnails_best_.py — adapted for BadMusic
 
+import asyncio
 import os
 import re
 import random
@@ -9,7 +10,6 @@ import aiofiles
 import aiohttp
 
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
-from youtubesearchpython.__future__ import VideosSearch
 
 import config
 
@@ -43,29 +43,62 @@ def trim_to_width(text, font, max_w):
     return ellipsis
 
 
-async def get_thumb(videoid: str, player_username: str = None) -> str:
-    if player_username is None:
-        try:
-            from BadMusic import app as _app
-            me = await _app.get_me()
-            player_username = me.username or "BadMusicBot"
-        except Exception:
-            player_username = "BadMusicBot"
+def _blocking_lookup(videoid: str):
+    """yt-dlp metadata lookup for ONE known video id — used only when the
+    caller didn't already have the title/thumbnail (see get_thumb below).
+    This replaces the old `youtubesearchpython` call, which is why the
+    card used to fall back to 'Unknown Title' / the generic placeholder:
+    that library was removed (it was broken — see the 401/`proxies`
+    fixes) but this file was still trying to import it, so every lookup
+    here silently failed and hit the `except` branch."""
+    import yt_dlp
+    opts = {"quiet": True, "no_warnings": True, "skip_download": True, "socket_timeout": 15}
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        info = ydl.extract_info(f"https://www.youtube.com/watch?v={videoid}", download=False)
+    return info or {}
+
+
+async def get_thumb(
+    videoid: str,
+    player_username: str = None,
+    title: str = None,
+    thumbnail_url: str = None,
+    duration: str = None,
+    views: str = None,
+) -> str:
+    """
+    Build the neon 'now playing' card.
+    Pass title/thumbnail_url/duration/views when the caller already has
+    them (play.py does — from the same search result that found this
+    song) so we never need a second network lookup at all. Only falls
+    back to a fresh yt-dlp lookup if none of that was given.
+    """
+    player_username = player_username or "BadMusicBot"
 
     cache_path = os.path.join(CACHE_DIR, f"{videoid}_v5.png")
     if os.path.exists(cache_path):
         return cache_path
 
-    try:
-        results = VideosSearch(f"https://www.youtube.com/watch?v={videoid}", limit=1)
-        search_result = await results.next()
-        data      = search_result.get("result", [])[0]
-        title     = re.sub(r"\W+", " ", data.get("title", "Unknown Title")).title()
-        thumbnail = data.get("thumbnails", [{}])[0].get("url", config.YOUTUBE_IMG_URL)
-        duration  = data.get("duration")
-        views     = data.get("viewCount", {}).get("short", "Unknown Views")
-    except Exception:
-        title, thumbnail, duration, views = "Unknown Title", config.YOUTUBE_IMG_URL, None, "Unknown Views"
+    if title and thumbnail_url:
+        title = re.sub(r"\W+", " ", title).title()
+        thumbnail = thumbnail_url
+        duration_val = duration
+        views_val = views or "Unknown Views"
+    else:
+        try:
+            data = await asyncio.to_thread(_blocking_lookup, videoid)
+            title = re.sub(r"\W+", " ", data.get("title", "Unknown Title")).title()
+            thumbnail = data.get("thumbnail") or f"https://img.youtube.com/vi/{videoid}/hqdefault.jpg"
+            duration_val = data.get("duration")  # seconds (int) here, formatted below
+            if isinstance(duration_val, (int, float)):
+                m, s = divmod(int(duration_val), 60)
+                h, m = divmod(m, 60)
+                duration_val = f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
+            views_val = str(data.get("view_count") or "Unknown Views")
+        except Exception as e:
+            title, thumbnail, duration_val, views_val = "Unknown Title", config.YOUTUBE_IMG_URL, None, "Unknown Views"
+    duration = duration_val
+    views = views_val
 
     is_live       = not duration or str(duration).lower() in {"live", "live now", ""}
     duration_text = "Live" if is_live else duration or "Unknown"

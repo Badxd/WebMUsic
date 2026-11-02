@@ -102,11 +102,22 @@ async def play(client: Client, message: Message):
             asyncio.create_task(delete_after(client, chat_id, mystic.id, 8))
             return
 
-        # Generate neon thumbnail
+        # Generate neon thumbnail — reuse the title/thumbnail we already
+        # fetched from search_youtube() instead of looking it up again
+        # (that 2nd lookup was broken, which is why the card used to show
+        # "Unknown Title" / a generic placeholder image).
         video_id = link.split("v=")[-1].split("&")[0] if "v=" in link else link.split("/")[-1]
         try:
-            thumb = await get_thumb(video_id)
-        except Exception:
+            thumb = await get_thumb(
+                video_id,
+                player_username=getattr(client, "username", None),
+                title=title,
+                thumbnail_url=r.get("thumbnail"),
+                duration=duration,
+                views=r.get("views"),
+            )
+        except Exception as e:
+            logger.warning(f"get_thumb: {e}")
             thumb = r.get("thumbnail", config.YOUTUBE_IMG_URL)
 
         song_data = {
@@ -336,7 +347,14 @@ async def _timer_updater(client: Client, chat_id: int, msg_id: int,
         try:
             seek = room.get_current_seek()
             kb   = stream_keyboard(chat_id, fmt_sec(seek), fmt_sec(dur_sec), wl)
-            await client.edit_message_reply_markup(chat_id, msg_id, kb)
+            # reply_markup MUST be passed as a keyword — kurigram inserts
+            # extra positional params before it, so `kb` landing in the
+            # 3rd *positional* slot silently binds to the wrong param and
+            # reply_markup stays None, which WIPES the buttons on the
+            # very first timer tick (that's the "buttons fly away" bug).
+            await client.edit_message_reply_markup(
+                chat_id=chat_id, message_id=msg_id, reply_markup=kb
+            )
         except Exception as e:
             if "not modified" not in str(e).lower():
                 logger.debug(f"timer [{chat_id}]: {e}")
