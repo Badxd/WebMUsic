@@ -56,7 +56,7 @@ def stream_kb(chat_id: int, played: str = "0:00",
             InlineKeyboardButton("‣‣I", callback_data=f"STREAM Skip|{chat_id}"),
             InlineKeyboardButton("▢",   callback_data=f"STREAM Stop|{chat_id}"),
         ],
-        [InlineKeyboardButton("🎧 ᴏᴩᴇɴ ᴡᴇʙᴀᴩᴩ", url=wl or config.MINIAPP_LINK)],
+        [InlineKeyboardButton("🎧 ᴊᴏɪɴ ʀᴏᴏᴍ", url=wl or config.MINIAPP_LINK)],
         [
             InlineKeyboardButton("🛡️ sᴜᴩᴩᴏʀᴛ", url=config.SUPPORT_GROUP),
             InlineKeyboardButton("✯ ᴄʟᴏsᴇ ✯",  callback_data="close"),
@@ -78,7 +78,7 @@ def queue_kb(wl: str = "") -> InlineKeyboardMarkup:
 # ── Session Ended ─────────────────────────────────────────
 def ended_kb(wl: str = "") -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🎧 ᴏᴩᴇɴ ᴡᴇʙᴀᴩᴩ", url=wl or config.MINIAPP_LINK)],
+        [InlineKeyboardButton("🎧 ᴊᴏɪɴ ʀᴏᴏᴍ", url=wl or config.MINIAPP_LINK)],
         [InlineKeyboardButton("✯ ᴄʟᴏsᴇ ✯", callback_data="close")],
     ])
 
