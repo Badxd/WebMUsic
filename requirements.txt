@@ -1,30 +1,16 @@
-# ── Telegram Bot ──────────────────────────────────────────
-kurigram
-TgCrypto
+# ── Mini webapp (listen-together room) ──
+fastapi>=0.115,<0.116
+uvicorn[standard]>=0.34,<0.35
+websockets
 
-# ── Voice Chat Streaming (real VC audio, like ShizuMusic) ──
-py-tgcalls==2.3.3
-ntgcalls>=2.2.4,<3.0.0
-
-# ── Database ───────────────────────────────────────────────
-motor==3.6.0
-
-# ── Web Framework (pinned compatible set) ─────────────────
-fastapi==0.115.12
-starlette==0.46.2
-uvicorn[standard]==0.34.2
-python-multipart==0.0.20
-
-# ── HTTP / Async ───────────────────────────────────────────
-aiohttp==3.11.18
-aiofiles==24.1.0
-
-# ── YouTube Search (no API key needed, actively maintained) ─
-yt-dlp
-youtube-search-python
-
-# ── Utils ──────────────────────────────────────────────────
-python-dotenv==1.1.0
-PyYAML
-flask==3.1.0
-pillow==9.5.0
+aiohttp~=3.14.3
+kurigram>=2.2.25
+ntgcalls==3.0.0rc1
+pillow~=12.3.0
+psutil~=7.2.2
+py-tgcalls==3.0.0rc1
+py-yt-search~=0.8.0
+pymongo>=4.17.0
+pytgcrypto>=1.2.12
+python-dotenv~=1.2.3
+yt-dlp[default]>=2026.8.19

@@ -1,74 +1,57 @@
-# Copyright (C) 2024 by Badhacker98@Github
-# Owner https://t.me/ll_BAD_MUNDA_ll
-
-"""
-config.py — Central configuration (Pyrogram version)
-"""
-import os
+from os import getenv
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# ── Pyrogram / Telegram ────────────────────────────────────
-API_ID       = int(os.getenv("API_ID",   "0"))
-API_HASH     = os.getenv("API_HASH",     "YOUR_API_HASH")
-BOT_TOKEN    = os.getenv("BOT_TOKEN",    "YOUR_BOT_TOKEN_HERE")
-OWNER_ID     = int(os.getenv("OWNER_ID", "0"))
-LOGGER_ID    = int(os.getenv("LOGGER_ID", "0"))
-UPDATES_CHANNEL  = os.getenv("UPDATES_CHANNEL", "https://t.me/PBX_UPDATE")
-SUPPORT_GROUP    = os.getenv("SUPPORT_GROUP", "https://t.me/PBXCHATS")
-SUPPORT_GROUP = os.getenv("SUPPORT_GROUP", "https://t.me/PBXCHATS")
+class Config:
+    def __init__(self):
+        self.API_ID = int(getenv("API_ID", 0))
+        self.API_HASH = getenv("API_HASH")
 
-# ── Assistant / Voice-Chat (PyTgCalls) ──────────────────────
-# A user-account session string is required so the bot can join and
-# stream real audio inside a group's Telegram Voice Chat. Generate one
-# with a "string session generator" (same account must be admin in the
-# group, or allowed to join voice chats). Leave empty to disable VC
-# streaming — the bot will still work as a web-only room player.
-STRING_SESSION = os.getenv("STRING_SESSION", "")
-VC_ENABLED     = bool(STRING_SESSION)
+        self.BOT_TOKEN = getenv("BOT_TOKEN")
+        self.MONGO_URL = getenv("MONGO_URL")
 
-# ── WebApp ─────────────────────────────────────────────────
-WEBAPP_URL   = os.getenv("WEBAPP_URL",   "https://your-domain.com")
-MINIAPP_LINK = os.getenv("MINIAPP_LINK", "https://t.me/BadMusicBot/app")
+        self.LOGGER_ID = int(getenv("LOGGER_ID", 0))
+        self.OWNER_ID = int(getenv("OWNER_ID", 0))
 
-# ── Database ───────────────────────────────────────────────
-MONGO_URL    = os.getenv("MONGO_URL",    "")
-DB_NAME      = os.getenv("DB_NAME",      "BadMusic")
+        self.DURATION_LIMIT = int(getenv("DURATION_LIMIT", 60)) * 60
+        self.QUEUE_LIMIT = int(getenv("QUEUE_LIMIT", 20))
+        self.PLAYLIST_LIMIT = int(getenv("PLAYLIST_LIMIT", 20))
 
-# ── Server ─────────────────────────────────────────────────
-PORT = int(os.getenv("PORT", "8000"))
-HOST = os.getenv("HOST",     "0.0.0.0")
+        self.SESSION1 = getenv("SESSION", None)
+        self.SESSION2 = getenv("SESSION2", None)
+        self.SESSION3 = getenv("SESSION3", None)
 
-# ── Downloads (same system as ShizuMusic: API_URL + API_KEY) ─
-# Set your own download API's base URL + key as env vars — nothing is
-# hard-coded. If left empty, the bot auto-discovers a public fallback
-# URL (old behaviour) and falls back to plain yt-dlp if that fails too.
-DOWNLOAD_DIR     = "static/downloads"
-API_URL          = os.getenv("API_URL", "").strip().rstrip("/")
-API_KEY          = os.getenv("API_KEY", "").strip()
-FALLBACK_API_URL = "https://shrutibots.site"
-API_URL_PASTEBIN = "https://pastebin.com/raw/rLsBhAQa"
+        self.SUPPORT_CHANNEL = getenv("SUPPORT_CHANNEL", "https://t.me/fallenx")
+        self.SUPPORT_CHAT = getenv("SUPPORT_CHAT", "https://t.me/DevilsHeavenMF")
 
-# ── Thumbnail (START_IMAGE) ────────────────────────────────
-# Change this URL to update the bot's start/help thumbnail
-START_IMAGE = os.getenv(
-    "START_IMAGE",
-    "https://files.catbox.moe/skgu94.jpg"   # ← apna image URL yahan paste karo
-)
+        self.AUTO_LEAVE: bool = getenv("AUTO_LEAVE", "False").lower() == "true"
+        self.AUTO_END: bool = getenv("AUTO_END", "False").lower() == "true"
+    
+        self.THUMB_GEN: bool = getenv("THUMB_GEN", "True").lower() == "true"
+        self.VIDEO_PLAY: bool = getenv("VIDEO_PLAY", "True").lower() == "true"
 
-# ── Fallback Images ────────────────────────────────────────
-# Shown when Telegram audio is played (no YouTube thumbnail)
-TELEGRAM_AUDIO_URL = os.getenv(
-    "TELEGRAM_AUDIO_URL",
-    "https://telegra.ph/file/8234d704952738ebcda7f.jpg",
-)
-# Shown when YouTube thumbnail fetch fails
-YOUTUBE_IMG_URL = os.getenv(
-    "YOUTUBE_IMG_URL",
-    "https://telegra.ph/file/76d29aa31c40a7f026d7e.jpg",
-)
+        self.LANG_CODE = getenv("LANG_CODE", "en")
 
-# ── Admin cache (per-group, populated by dispatcher) ──────
-# {chat_id: [user_id, ...]}
-adminlist: dict = {}
+        self.COOKIES_URL = [
+            url for url in getenv("COOKIES_URL", "").split(" ")
+            if url and "batbin.me" in url
+        ]
+        self.DEFAULT_THUMB = getenv("DEFAULT_THUMB", "https://te.legra.ph/file/3e40a408286d4eda24191.jpg")
+        self.PING_IMG = getenv("PING_IMG", "https://files.catbox.moe/haagg2.png")
+        self.START_IMG = getenv("START_IMG", "https://files.catbox.moe/zvziwk.jpg")
+
+        # ── Mini WebApp (listen-together room) ──────────────
+        self.WEBAPP_ENABLED: bool = getenv("WEBAPP_ENABLED", "True").lower() == "true"
+        self.PORT = int(getenv("PORT", 8000))
+        self.HOST = getenv("HOST", "0.0.0.0")
+        self.MINIAPP_LINK = getenv("MINIAPP_LINK", "")  # e.g. https://t.me/YourBot/room
+
+    def check(self):
+        missing = [
+            var
+            for var in ["API_ID", "API_HASH", "BOT_TOKEN", "MONGO_URL", "LOGGER_ID", "OWNER_ID", "SESSION1"]
+            if not getattr(self, var)
+        ]
+        if missing:
+            raise SystemExit(f"Missing required environment variables: {', '.join(missing)}")

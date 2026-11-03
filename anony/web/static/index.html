@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AnonX Room</title>
+<link rel="stylesheet" href="/static/css/style.css">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+<!-- ── Join screen ───────────────────────────────────────── -->
+<section id="join-screen" class="screen">
+  <div class="glow glow-1"></div>
+  <div class="glow glow-2"></div>
+  <div class="join-card">
+    <div class="logo-ring"><span>🎧</span></div>
+    <h1 id="join-chat-name">Loading room…</h1>
+    <p class="muted" id="join-sub">connecting…</p>
+    <button id="join-btn" class="btn-neon" disabled>Join Room</button>
+  </div>
+</section>
+
+<!-- ── Player screen ─────────────────────────────────────── -->
+<section id="player-screen" class="screen hidden">
+  <header class="top-bar">
+    <span id="chat-name" class="chat-name">Room</span>
+    <span class="listeners">🎧 <span id="listener-count">0</span></span>
+  </header>
+
+  <div class="art-wrap">
+    <div class="art-glow"></div>
+    <div class="art" id="art">🎵</div>
+  </div>
+
+  <h2 id="song-title">Nothing playing</h2>
+  <p class="muted" id="song-by">—</p>
+
+  <div class="progress-row">
+    <span id="time-cur">0:00</span>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    <span id="time-dur">0:00</span>
+  </div>
+
+  <!-- Admin-only transport — hidden entirely for regular listeners.
+       No speed control here on purpose: speed is a group /speed
+       command only, not a website control. -->
+  <div class="controls" id="controls" style="display:none">
+    <button class="ctrl" id="btn-skip-back" title="not available">⏮</button>
+    <button class="ctrl ctrl-main" id="btn-playpause">⏸</button>
+    <button class="ctrl" id="btn-skip">⏭</button>
+  </div>
+  <p class="listener-note" id="listener-note">You're listening — only group admins control playback.</p>
+</section>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="/static/js/script.js"></script>
+</body>
+</html>

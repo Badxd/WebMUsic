@@ -1,86 +1,59 @@
 {
-  "name": "Bad Music Bot",
-  "description": "Telegram music bot with a mini WebApp room player + real Voice Chat streaming (PyTgCalls), like ShizuMusic.",
-  "repository": "https://github.com/Badxd/WebMUsic",
-  "logo": "https://files.catbox.moe/skgu94.jpg",
-  "keywords": ["python", "telegram", "music-bot", "pyrogram", "pytgcalls", "fastapi"],
-  "stack": "heroku-24",
-  "buildpacks": [
-    { "url": "heroku/python" },
-    { "url": "https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest.git" }
-  ],
-  "formation": {
-    "web": {
-      "quantity": 1,
-      "size": "basic"
+    "name": "AnonX Music",
+    "description": "A Telegram Music Player Bot, written in Python with Pyrogram and Py-Tgcalls.",
+    "logo": "https://te.legra.ph/file/b8a0c1a00db3e57522b53.jpg",
+    "keywords": ["python3", "telegram", "bot", "music-bot"],
+    "stack": "container",
+    "env": {
+        "API_ID": {
+            "description": "Get this value from https://my.telegram.org",
+            "value": "",
+            "required": true
+        },
+        "API_HASH": {
+            "description": "Get this value from https://my.telegram.org",
+            "value": "",
+            "required": true
+        },
+        "BOT_TOKEN": {
+            "description": "A Bot's token from Botfather",
+            "value": "",
+            "required": true
+        },
+        "MONGO_URL": {
+            "description": "Get a mongodb url from https://cloud.mongodb.com.",
+            "value": "",
+            "required": true
+        },
+        "LOGGER_ID": {
+            "description": "Your log group ID, add your bot there and promote as an admin.",
+            "value": "",
+            "required": true
+        },
+        "OWNER_ID": {
+            "description": "The user id of user whom you would like to add as OWNER.",
+            "value": "",
+            "required": true
+        },
+        "SESSION": {
+            "description": "A Pyrogram v2 String Session from @StringFatherBot on Telegram.",
+            "value": "",
+            "required": true
+        },
+        "WEBAPP_ENABLED": {
+            "description": "Run the mini listen-together room website alongside the bot.",
+            "value": "True",
+            "required": false
+        },
+        "PORT": {
+            "description": "Port the mini webapp listens on.",
+            "value": "8000",
+            "required": false
+        },
+        "MINIAPP_LINK": {
+            "description": "Your bot's Telegram Mini App link, e.g. https://t.me/YourBot/room (set up with @BotFather first). Leave empty to skip the 'Open Room' button.",
+            "value": "",
+            "required": false
+        }
     }
-  },
-  "env": {
-    "API_ID": {
-      "description": "Telegram API ID — from https://my.telegram.org",
-      "required": true
-    },
-    "API_HASH": {
-      "description": "Telegram API HASH — from https://my.telegram.org",
-      "required": true
-    },
-    "BOT_TOKEN": {
-      "description": "Your bot's token from @BotFather",
-      "required": true
-    },
-    "OWNER_ID": {
-      "description": "Your numeric Telegram user ID (bot owner)",
-      "required": true
-    },
-    "LOGGER_ID": {
-      "description": "Chat/channel ID where activity logs are sent",
-      "required": false,
-      "value": "0"
-    },
-    "SUPPORT_GROUP": {
-      "description": "Your support group/channel link",
-      "required": false,
-      "value": "https://t.me/PBXCHATS"
-    },
-    "STRING_SESSION": {
-      "description": "Pyrogram session string for a normal Telegram USER account (assistant). Needed only for real Voice Chat streaming — leave empty to run web-room-only.",
-      "required": false,
-      "value": ""
-    },
-    "API_URL": {
-      "description": "Base URL of YOUR OWN song-download API (same system as ShizuMusic) — e.g. https://your-api.example.com, no trailing slash. Leave empty to auto-use a public fallback (less reliable).",
-      "required": false,
-      "value": ""
-    },
-    "API_KEY": {
-      "description": "API key for the download API above — ADD YOUR OWN. Without this the download API returns 401 and every /play fails until it falls back to plain yt-dlp.",
-      "required": false,
-      "value": ""
-    },
-    "MONGO_URL": {
-      "description": "MongoDB connection URL (e.g. MongoDB Atlas). Leave empty to use a local database.json — note this resets on every Heroku dyno restart, so MongoDB is recommended for production.",
-      "required": false,
-      "value": ""
-    },
-    "DB_NAME": {
-      "description": "MongoDB database name",
-      "required": false,
-      "value": "BadMusic"
-    },
-    "WEBAPP_URL": {
-      "description": "Public base URL of this deployed app, e.g. https://your-app.herokuapp.com (set this AFTER the first deploy, then restart the dyno)",
-      "required": false,
-      "value": "https://your-app.herokuapp.com"
-    },
-    "MINIAPP_LINK": {
-      "description": "Telegram Mini App deep link for your bot, e.g. https://t.me/YourBot/app",
-      "required": false,
-      "value": "https://t.me/YourBot/app"
-    },
-    "START_IMAGE": {
-      "description": "Thumbnail image shown on /start",
-      "required": false,
-      "value": "https://files.catbox.moe/skgu94.jpg"
-    }
-  }
 }
