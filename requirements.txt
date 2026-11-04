@@ -6,8 +6,8 @@ websockets
 
 # Telegram & Voice Chat
 kurigram
-py-tgcalls==3.0.0rc1
-ntgcalls==3.0.0rc1
+py-tgcalls
+ntgcalls
 pytgcrypto>=1.2.12
 
 # HTTP & Search
