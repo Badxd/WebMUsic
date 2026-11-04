@@ -1,16 +1,24 @@
-# ── Mini webapp (listen-together room) ──
+
+# Mini WebApp (Listen Together Room)
 fastapi>=0.115,<0.116
 uvicorn[standard]>=0.34,<0.35
 websockets
 
-aiohttp~=3.14.3
+# Telegram & Voice Chat
 kurigram
+py-tgcalls==3.0.0rc1
 ntgcalls==3.0.0rc1
+pytgcrypto>=1.2.12
+
+# HTTP & Search
+aiohttp~=3.14.3
+py-yt-search~=0.8.0
+yt-dlp[default]>=2026.8.19
+
+# Database
+pymongo>=4.17.0
+
+# Utilities
 pillow~=12.3.0
 psutil~=7.2.2
-py-tgcalls==3.0.0rc1
-py-yt-search~=0.8.0
-pymongo>=4.17.0
-pytgcrypto>=1.2.12
 python-dotenv~=1.2.3
-yt-dlp[default]>=2026.8.19
