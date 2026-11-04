@@ -3,58 +3,69 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07060d">
 <title>AloneX Room</title>
 <link rel="stylesheet" href="/static/css/style.css">
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://telegram.org/js/telegram-web-app.js" defer></script>
 </head>
-<body>
+<body data-view="join">
+<a class="skip-link" href="#workspace">Skip to player</a>
 
 <!-- ── Join screen ───────────────────────────────────────── -->
-<section id="join-screen" class="screen">
-  <div class="glow glow-1"></div>
-  <div class="glow glow-2"></div>
+<section id="join-screen" class="screen" aria-labelledby="join-chat-name">
+  <div class="glow glow-1" aria-hidden="true"></div>
+  <div class="glow glow-2" aria-hidden="true"></div>
   <div class="join-card">
-    <div class="logo-ring"><span>🎧</span></div>
+    <div class="logo-ring" aria-hidden="true"><span>🎧</span></div>
     <h1 id="join-chat-name">Loading room…</h1>
-    <p class="muted" id="join-sub">connecting…</p>
-    <button id="join-btn" class="btn-neon" disabled>Join Room</button>
+    <p class="muted" id="join-sub" role="status">connecting…</p>
+    <button id="join-btn" class="btn btn-primary" disabled>Join Room</button>
   </div>
 </section>
 
 <!-- ── Player screen ─────────────────────────────────────── -->
-<section id="player-screen" class="screen hidden">
-  <header class="top-bar">
-    <span id="chat-name" class="chat-name">Room</span>
-    <span class="listeners">🎧 <span id="listener-count">0</span></span>
+<main id="workspace" class="screen hidden" tabindex="-1">
+  <header class="topbar">
+    <span class="brand"><span aria-hidden="true">🎧</span> <span id="chat-name">Room</span></span>
+    <div class="presence" role="status">
+      <span class="dot" id="connection-dot" aria-hidden="true"></span>
+      <span id="connection-label">Live</span>
+      <span class="presence-divider" aria-hidden="true">·</span>
+      <span id="listener-count">0</span> listening
+    </div>
   </header>
 
-  <div class="art-wrap">
-    <div class="art-glow"></div>
-    <div class="art" id="art">🎵</div>
-  </div>
+  <section class="now-playing" aria-labelledby="song-title">
+    <div class="art-wrap">
+      <div class="art-glow" aria-hidden="true"></div>
+      <div class="art" id="art" role="img" aria-label="Album artwork">🎵</div>
+    </div>
 
-  <h2 id="song-title">Nothing playing</h2>
-  <p class="muted" id="song-by">—</p>
+    <h2 id="song-title">Nothing playing</h2>
+    <p class="muted" id="song-by">—</p>
 
-  <div class="progress-row">
-    <span id="time-cur">0:00</span>
-    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
-    <span id="time-dur">0:00</span>
-  </div>
+    <div class="progress-row">
+      <span id="time-cur" class="time">0:00</span>
+      <div class="progress-track" role="presentation">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <span id="time-dur" class="time">0:00</span>
+    </div>
 
-  <!-- Admin-only transport — hidden entirely for regular listeners.
-       No speed control here on purpose: speed is a group /speed
-       command only, not a website control. -->
-  <div class="controls" id="controls" style="display:none">
-    <button class="ctrl" id="btn-skip-back" title="not available">⏮</button>
-    <button class="ctrl ctrl-main" id="btn-playpause">⏸</button>
-    <button class="ctrl" id="btn-skip">⏭</button>
-  </div>
-  <p class="listener-note" id="listener-note">You're listening — only group admins control playback.</p>
-</section>
+    <!-- Admin-only transport — hidden entirely for regular listeners.
+         No speed control here on purpose: speed is a group /speed
+         command only, not a website control. -->
+    <div class="controls" id="controls" hidden>
+      <button class="ctrl" id="btn-skip-back" disabled aria-label="Previous (not available)">⏮</button>
+      <button class="ctrl ctrl-main" id="btn-playpause" aria-label="Play or pause">⏸</button>
+      <button class="ctrl" id="btn-skip" aria-label="Skip to next">⏭</button>
+    </div>
+    <p class="listener-note" id="listener-note">You're listening — only group admins control playback.</p>
+  </section>
+</main>
 
-<div id="toast" class="toast hidden"></div>
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
-<script src="/static/js/script.js"></script>
+<script src="/static/js/script.js" defer></script>
 </body>
 </html>

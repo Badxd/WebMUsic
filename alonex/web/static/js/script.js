@@ -23,7 +23,7 @@ const chatId = decodeChatId(startParam || "");
 
 const $ = (id) => document.getElementById(id);
 const joinScreen = $("join-screen");
-const playerScreen = $("player-screen");
+const workspace = $("workspace");
 let socket = null;
 let isAdmin = false;
 let localPlaying = false;
@@ -69,15 +69,27 @@ async function loadJoinInfo() {
 
 $("join-btn").addEventListener("click", () => {
   joinScreen.classList.add("hidden");
-  playerScreen.classList.remove("hidden");
+  workspace.classList.remove("hidden");
+  document.body.dataset.view = "room";
+  workspace.focus(); // skip-link target — moves focus in for keyboard/screen-reader users
   connect();
 });
 
+function setConnection(state) {
+  // state: "connecting" | "live" | "offline"
+  const dot = $("connection-dot");
+  const label = $("connection-label");
+  dot.dataset.state = state;
+  label.textContent = state === "live" ? "Live" : state === "connecting" ? "Connecting…" : "Reconnecting…";
+}
+
 function connect() {
+  setConnection("connecting");
   const proto = location.protocol === "https:" ? "wss" : "ws";
   socket = new WebSocket(`${proto}://${location.host}/ws/${chatId}/${userId || 0}`);
+  socket.onopen = () => setConnection("live");
   socket.onmessage = (ev) => render(JSON.parse(ev.data));
-  socket.onclose = () => setTimeout(connect, 2500);
+  socket.onclose = () => { setConnection("offline"); setTimeout(connect, 2500); };
   socket.onerror = () => socket.close();
 
   // keep-alive ping every 20s so the socket doesn't idle out
@@ -91,14 +103,15 @@ function render(data) {
   $("chat-name").textContent = data.chat_name || "Room";
   $("listener-count").textContent = data.listeners ?? 0;
 
-  isAdmin = !!data.is_admin; // server doesn't send this today — see note below
-  $("controls").style.display = isAdmin ? "flex" : "none";
-  $("listener-note").style.display = isAdmin ? "none" : "block";
+  isAdmin = !!data.is_admin;
+  $("controls").hidden = !isAdmin;
+  $("listener-note").hidden = isAdmin;
 
   if (!data.active || !data.song) {
     $("song-title").textContent = "Nothing playing";
     $("song-by").textContent = "Use /play in the group to start";
     $("art").textContent = "🎵";
+    $("art").style.backgroundImage = "none";
     $("progress-fill").style.width = "0%";
     $("time-cur").textContent = "0:00";
     $("time-dur").textContent = "0:00";
