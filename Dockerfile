@@ -6,8 +6,7 @@ WORKDIR /app
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    DENO_INSTALL=/root/.deno \
-    PATH="/root/.deno/bin:/root/.local/bin:${PATH}"
+    PATH="/root/.local/bin:${PATH}"
 
 # Install system dependencies
 RUN apt-get update \
@@ -28,9 +27,6 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && npm install -g npm \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-
-# Install Deno
-RUN curl -fsSL https://deno.land/install.sh | sh
 
 # Install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
