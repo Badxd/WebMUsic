@@ -40,7 +40,11 @@ async def start(_, message: types.Message):
         photo=config.START_IMG,
         caption=_text,
         reply_markup=key,
-        quote=not private,
+        # this kurigram version's reply_photo() has no `quote` kwarg
+        # (that's what was crashing /start) — reply_to_message_id is
+        # the real param that does the same "quote in groups, not in
+        # DMs" thing.
+        reply_to_message_id=message.id if not private else None,
     )
 
     if private:

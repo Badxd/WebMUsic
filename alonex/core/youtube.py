@@ -231,15 +231,24 @@ class YouTube:
             pass
         return tracks
 
-    async def download(self, video_id: str, video: bool = False) -> str | None:
+    # ── Download: same Cookies/API toggle as search ─────────
+    # config.USE_COOKIES True  -> cookies (yt-dlp) first, API fallback
+    # config.USE_COOKIES False -> straight to API, cookies NEVER touched
+    #   (previously this method always called get_cookies() no matter
+    #   what, which is why "Cookies are missing" kept showing up even
+    #   with USE_COOKIES=False — and why disabling it didn't actually
+    #   switch anything to the API, since download() never tried the
+    #   API at all before now).
+    # Either way, a final bare yt-dlp attempt (no cookies) is the last
+    # resort, so a download never fails outright just because cookies/
+    # API aren't configured.
+
+    async def _download_via_ytdlp(self, video_id: str, video: bool, use_cookies: bool) -> str | None:
         url = self.base + video_id
         ext = "mp4" if video else "webm"
         filename = f"downloads/{video_id}.{ext}"
 
-        if Path(filename).exists():
-            return filename
-
-        cookie = self.get_cookies()
+        cookie = self.get_cookies() if use_cookies else None
         base_opts = {
             "outtmpl": "downloads/%(id)s.%(ext)s",
             "quiet": True,
@@ -249,9 +258,10 @@ class YouTube:
             "overwrites": False,
             "logger": DummyLogger(),
             "nocheckcertificate": True,
-            "cookiefile": cookie,
             "remote_components": ["ejs:github"],
         }
+        if cookie:
+            base_opts["cookiefile"] = cookie
 
         if video:
             ydl_opts = {
@@ -277,3 +287,59 @@ class YouTube:
             return filename
 
         return await asyncio.to_thread(_download)
+
+    async def _download_via_api(self, video_id: str, video: bool = False) -> str | None:
+        """GET {API_URL}/download?url=<id>&type=audio|video&api_key=<key>
+        — same API the search toggle uses."""
+        if not (config.API_URL and config.API_KEY):
+            return None
+        ext = "mp4" if video else "webm"
+        filename = f"downloads/{video_id}.{ext}"
+        tmp = filename + ".part"
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    f"{config.API_URL}/download",
+                    params={"url": video_id, "type": "video" if video else "audio", "api_key": config.API_KEY},
+                    timeout=aiohttp.ClientTimeout(total=180),
+                ) as resp:
+                    if resp.status != 200:
+                        logger.warning(f"[api] download failed: HTTP {resp.status}")
+                        return None
+                    data = await resp.read()
+        except Exception as e:
+            logger.warning(f"[api] download error for {video_id}: {e}")
+            return None
+
+        if len(data) < 4096 or data[:1] in (b"{", b"<", b"["):
+            logger.warning("[api] no media returned (check API_URL / API_KEY)")
+            return None
+
+        os.makedirs("downloads", exist_ok=True)
+        try:
+            with open(tmp, "wb") as f:
+                f.write(data)
+            os.replace(tmp, filename)
+            return filename
+        except OSError as e:
+            logger.warning(f"[api] couldn't save download: {e}")
+            return None
+
+    async def download(self, video_id: str, video: bool = False) -> str | None:
+        ext = "mp4" if video else "webm"
+        filename = f"downloads/{video_id}.{ext}"
+        if Path(filename).exists():
+            return filename
+
+        if config.USE_COOKIES:
+            got = await self._download_via_ytdlp(video_id, video, use_cookies=True)
+            if got:
+                return got
+            logger.info(f"[download] cookies failed, trying API for {video_id}")
+            return await self._download_via_api(video_id, video)
+
+        got = await self._download_via_api(video_id, video)
+        if got:
+            return got
+        logger.info(f"[download] API not used/failed, trying plain yt-dlp for {video_id}")
+        return await self._download_via_ytdlp(video_id, video, use_cookies=False)
