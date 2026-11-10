@@ -37,6 +37,16 @@ class Config:
             url for url in getenv("COOKIES_URL", "").split(" ")
             if url and "batbin.me" in url
         ]
+
+        # ── Search/Download source: Cookies, API, or both ───
+        # True  -> try cookies (yt-dlp) first, fall back to the API below
+        # False -> go straight to the API, skip cookies entirely
+        self.USE_COOKIES: bool = getenv("USE_COOKIES", "True").lower() == "true"
+        # Your own search/download API's base URL + key — nothing is
+        # hard-coded. Leave empty to rely on cookies/plain yt-dlp only.
+        self.API_URL = getenv("API_URL", "").strip().rstrip("/")
+        self.API_KEY = getenv("API_KEY", "").strip()
+
         self.DEFAULT_THUMB = getenv("DEFAULT_THUMB", "https://te.legra.ph/file/3e40a408286d4eda24191.jpg")
         self.PING_IMG = getenv("PING_IMG", "https://files.catbox.moe/haagg2.png")
         self.START_IMG = getenv("START_IMG", "https://files.catbox.moe/zvziwk.jpg")

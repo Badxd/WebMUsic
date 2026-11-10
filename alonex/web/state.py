@@ -60,6 +60,12 @@ class RoomState:
         self.clocks: Dict[int, RoomClock] = {}
         self.listeners: Dict[int, Set[WebSocket]] = {}
         self._chat_title_cache: Dict[int, tuple] = {}  # chat_id -> (title, fetched_at)
+        # Ephemeral — NOT persisted to the database on purpose: this is a
+        # live "who's in the room right now" / "last few messages" view,
+        # not a saved chat history or a friends/profile system. It all
+        # disappears when the room empties out, same as a live radio
+        # chat would.
+        self.chat_log: Dict[int, List[dict]] = {}   # chat_id -> last 50 messages
 
     def clock(self, chat_id: int) -> RoomClock:
         if chat_id not in self.clocks:
@@ -75,6 +81,23 @@ class RoomState:
 
     def listener_count(self, chat_id: int) -> int:
         return len(self.listeners.get(chat_id, ()))
+
+    def listener_people(self, chat_id: int) -> List[dict]:
+        """Who's actually here right now — identity (name/photo) that
+        each socket sent in on connect, deduplicated by user_id."""
+        seen, out = set(), []
+        for ws in self.listeners.get(chat_id, ()):
+            info = getattr(ws, "person", None)
+            if not info or info["user_id"] in seen:
+                continue
+            seen.add(info["user_id"])
+            out.append(info)
+        return out
+
+    def add_chat(self, chat_id: int, msg: dict):
+        log = self.chat_log.setdefault(chat_id, [])
+        log.append(msg)
+        del log[:-50]  # keep only the last 50
 
 
 room_state = RoomState()

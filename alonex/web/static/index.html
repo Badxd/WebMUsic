@@ -23,7 +23,7 @@
   </div>
 </section>
 
-<!-- ── Player screen ─────────────────────────────────────── -->
+<!-- ── Workspace ─────────────────────────────────────────── -->
 <main id="workspace" class="screen hidden" tabindex="-1">
   <header class="topbar">
     <span class="brand"><span aria-hidden="true">🎧</span> <span id="chat-name">Room</span></span>
@@ -31,37 +31,74 @@
       <span class="dot" id="connection-dot" aria-hidden="true"></span>
       <span id="connection-label">Live</span>
       <span class="presence-divider" aria-hidden="true">·</span>
-      <span id="listener-count">0</span> listening
+      <span id="listener-count">0</span> here
     </div>
   </header>
 
-  <section class="now-playing" aria-labelledby="song-title">
-    <div class="art-wrap">
-      <div class="art-glow" aria-hidden="true"></div>
-      <div class="art" id="art" role="img" aria-label="Album artwork">🎵</div>
-    </div>
-
-    <h2 id="song-title">Nothing playing</h2>
-    <p class="muted" id="song-by">—</p>
-
-    <div class="progress-row">
-      <span id="time-cur" class="time">0:00</span>
-      <div class="progress-track" role="presentation">
-        <div class="progress-fill" id="progress-fill"></div>
+  <!-- ── Player tab ─────────────────────────────────── -->
+  <section class="tab-panel" id="tab-player" data-tab="player">
+    <div class="now-playing">
+      <div class="art-wrap">
+        <div class="art-glow" aria-hidden="true"></div>
+        <div class="art" id="art" role="img" aria-label="Album artwork">🎵</div>
       </div>
-      <span id="time-dur" class="time">0:00</span>
-    </div>
 
-    <!-- Admin-only transport — hidden entirely for regular listeners.
-         No speed control here on purpose: speed is a group /speed
-         command only, not a website control. -->
-    <div class="controls" id="controls" hidden>
-      <button class="ctrl" id="btn-skip-back" disabled aria-label="Previous (not available)">⏮</button>
-      <button class="ctrl ctrl-main" id="btn-playpause" aria-label="Play or pause">⏸</button>
-      <button class="ctrl" id="btn-skip" aria-label="Skip to next">⏭</button>
+      <h2 id="song-title">Nothing playing</h2>
+      <p class="muted" id="song-by">—</p>
+
+      <div class="progress-row">
+        <span id="time-cur" class="time">0:00</span>
+        <div class="progress-track" role="presentation"><div class="progress-fill" id="progress-fill"></div></div>
+        <span id="time-dur" class="time">0:00</span>
+      </div>
+
+      <!-- Admin-only transport. No speed control here on purpose —
+           speed is a group /speed command only, not a website control. -->
+      <div class="controls" id="controls" hidden>
+        <button class="ctrl" id="btn-skip-back" disabled aria-label="Previous (not available)">⏮</button>
+        <button class="ctrl ctrl-main" id="btn-playpause" aria-label="Play or pause">⏸</button>
+        <button class="ctrl" id="btn-skip" aria-label="Skip to next">⏭</button>
+      </div>
+      <p class="listener-note" id="listener-note">You're listening — only group admins control playback.</p>
+
+      <div class="queue-preview" id="queue-preview"></div>
     </div>
-    <p class="listener-note" id="listener-note">You're listening — only group admins control playback.</p>
   </section>
+
+  <!-- ── Chat tab ───────────────────────────────────── -->
+  <section class="tab-panel hidden" id="tab-chat" data-tab="chat">
+    <ul class="chat-log" id="chat-log" aria-live="polite"></ul>
+    <form class="chat-input-row" id="chat-form">
+      <input id="chat-input" class="chat-input" type="text" maxlength="300" placeholder="Say something…" autocomplete="off">
+      <button class="btn-send" type="submit" aria-label="Send">➤</button>
+    </form>
+  </section>
+
+  <!-- ── People tab ─────────────────────────────────── -->
+  <section class="tab-panel hidden" id="tab-people" data-tab="people">
+    <h3 class="section-title">Listening now</h3>
+    <ul class="people-list" id="people-list"></ul>
+  </section>
+
+  <!-- ── Profile tab ────────────────────────────────── -->
+  <section class="tab-panel hidden" id="tab-profile" data-tab="profile">
+    <div class="profile-card">
+      <div class="profile-avatar" id="profile-avatar">🙂</div>
+      <h3 id="profile-name">Guest</h3>
+      <p class="muted" id="profile-username"></p>
+      <div class="profile-stats">
+        <div><strong id="profile-time">0:00</strong><span>time in room</span></div>
+        <div><strong id="profile-room">—</strong><span>room</span></div>
+      </div>
+    </div>
+  </section>
+
+  <nav class="tabbar" aria-label="Room sections">
+    <button class="tab-btn active" data-tab="player" aria-current="page">🎵<span>Player</span></button>
+    <button class="tab-btn" data-tab="chat">💬<span>Chat</span></button>
+    <button class="tab-btn" data-tab="people">🧑‍🤝‍🧑<span>People</span></button>
+    <button class="tab-btn" data-tab="profile">👤<span>Profile</span></button>
+  </nav>
 </main>
 
 <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>

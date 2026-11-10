@@ -1,18 +1,19 @@
-// alonex/web/static/js/script.js
-// Clean, minimal room client. No speed control here on purpose —
-// speed is a group /speed command only (see alonex/plugins/speed.py),
-// never a website control.
+// anony/web/static/js/script.js
+// No speed control here on purpose — speed is a group /speed command
+// only (see alonex/plugins/speed.py), never a website control.
+// Chat/People/Profile are intentionally ephemeral: nothing here is
+// written to a database, it all lives only as long as the room does.
 
 const tg = window.Telegram?.WebApp;
 tg?.ready();
 tg?.expand();
 
-const tgUser = tg?.initDataUnsafe?.user;
-const userId = tgUser?.id || 0;
-const username = tgUser?.username || tgUser?.first_name || "Guest";
+const tgUser   = tg?.initDataUnsafe?.user;
+const userId   = tgUser?.id || 0;
+const myName   = tgUser?.first_name || "Guest";
+const myUser   = tgUser?.username || "";
+const myPhoto  = tgUser?.photo_url || "";
 
-// ── chat_id comes from the clean short startapp param: just the
-// chat_id (e.g. "N1003247919384"), nothing else encoded in it.
 function decodeChatId(enc) {
   if (!enc) return 0;
   if (enc.startsWith("N")) return -parseInt(enc.slice(1), 10);
@@ -28,7 +29,8 @@ let socket = null;
 let isAdmin = false;
 let localPlaying = false;
 let progressTimer = null;
-let lastState = null;
+let roomStartedAt = 0;
+let profileTimer = null;
 
 function showToast(msg) {
   const t = $("toast");
@@ -43,10 +45,29 @@ function fmtTime(s) {
   const m = Math.floor(s / 60), sec = s % 60;
   return `${m}:${String(sec).padStart(2, "0")}`;
 }
+function avatarEl(person) {
+  if (person.photo_url) {
+    const img = document.createElement("img");
+    img.src = person.photo_url;
+    img.alt = "";
+    img.className = "avatar-img";
+    return img;
+  }
+  const span = document.createElement("span");
+  span.className = "avatar-fallback";
+  span.textContent = (person.name || "?").trim().charAt(0).toUpperCase() || "?";
+  return span;
+}
 
-// ── Join screen: fetch the room once (REST) just to show the real
-// group name immediately — like Playeon does — before the socket
-// even connects.
+// ── Tabs ─────────────────────────────────────────────────
+document.querySelectorAll(".tab-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach((b) => b.classList.toggle("active", b === btn));
+    document.querySelectorAll(".tab-panel").forEach((p) => p.classList.toggle("hidden", p.dataset.tab !== btn.dataset.tab));
+  });
+});
+
+// ── Join screen ──────────────────────────────────────────
 async function loadJoinInfo() {
   if (!chatId) {
     $("join-chat-name").textContent = "Invalid room link";
@@ -71,12 +92,29 @@ $("join-btn").addEventListener("click", () => {
   joinScreen.classList.add("hidden");
   workspace.classList.remove("hidden");
   document.body.dataset.view = "room";
-  workspace.focus(); // skip-link target — moves focus in for keyboard/screen-reader users
+  workspace.focus();
+  roomStartedAt = Date.now();
+  $("profile-room").textContent = $("join-chat-name").textContent;
+  profileTimer = setInterval(() => {
+    $("profile-time").textContent = fmtTime((Date.now() - roomStartedAt) / 1000);
+  }, 1000);
+  renderProfileIdentity();
   connect();
 });
 
+function renderProfileIdentity() {
+  $("profile-name").textContent = myName;
+  $("profile-username").textContent = myUser ? `@${myUser}` : "";
+  const av = $("profile-avatar");
+  av.innerHTML = "";
+  if (myPhoto) {
+    av.appendChild(avatarEl({ photo_url: myPhoto, name: myName }));
+  } else {
+    av.textContent = myName.charAt(0).toUpperCase() || "🙂";
+  }
+}
+
 function setConnection(state) {
-  // state: "connecting" | "live" | "offline"
   const dot = $("connection-dot");
   const label = $("connection-label");
   dot.dataset.state = state;
@@ -86,20 +124,32 @@ function setConnection(state) {
 function connect() {
   setConnection("connecting");
   const proto = location.protocol === "https:" ? "wss" : "ws";
-  socket = new WebSocket(`${proto}://${location.host}/ws/${chatId}/${userId || 0}`);
+  const params = new URLSearchParams({ name: myName, username: myUser, photo: myPhoto });
+  socket = new WebSocket(`${proto}://${location.host}/ws/${chatId}/${userId || 0}?${params}`);
   socket.onopen = () => setConnection("live");
-  socket.onmessage = (ev) => render(JSON.parse(ev.data));
+  socket.onmessage = (ev) => handleMessage(JSON.parse(ev.data));
   socket.onclose = () => { setConnection("offline"); setTimeout(connect, 2500); };
   socket.onerror = () => socket.close();
 
-  // keep-alive ping every 20s so the socket doesn't idle out
   setInterval(() => {
     if (socket?.readyState === WebSocket.OPEN) socket.send("ping");
   }, 20000);
 }
 
+function handleMessage(data) {
+  if (data.type === "chat") return appendChatMessage(data);
+  if (data.type === "system") return handleSystem(data);
+  render(data); // type === "state"
+}
+
+function handleSystem(data) {
+  if (data.person?.user_id === userId) return; // don't toast your own join/leave
+  const name = data.person?.name || "Someone";
+  showToast(data.event === "joined" ? `${name} joined 👋` : `${name} left`);
+}
+
+// ── Player ───────────────────────────────────────────────
 function render(data) {
-  lastState = data;
   $("chat-name").textContent = data.chat_name || "Room";
   $("listener-count").textContent = data.listeners ?? 0;
 
@@ -116,26 +166,59 @@ function render(data) {
     $("time-cur").textContent = "0:00";
     $("time-dur").textContent = "0:00";
     stopProgressTimer();
-    return;
+  } else {
+    const song = data.song;
+    $("song-title").textContent = song.title;
+    $("song-by").textContent = song.requested_by ? `Requested by ${song.requested_by}` : "";
+    $("time-dur").textContent = fmtTime(song.duration_sec);
+    if (song.thumbnail) {
+      $("art").style.backgroundImage = `url(${song.thumbnail})`;
+      $("art").style.backgroundSize = "cover";
+      $("art").textContent = "";
+    }
+    localPlaying = song.playing;
+    $("btn-playpause").textContent = localPlaying ? "⏸" : "▶";
+    startProgressTimer(song.seek, song.duration_sec, song.playing);
   }
 
-  const song = data.song;
-  $("song-title").textContent = song.title;
-  $("song-by").textContent = song.requested_by ? `Requested by ${song.requested_by}` : "";
-  $("time-dur").textContent = fmtTime(song.duration_sec);
-  if (song.thumbnail) {
-    $("art").style.backgroundImage = `url(${song.thumbnail})`;
-    $("art").style.backgroundSize = "cover";
-    $("art").textContent = "";
+  renderQueue(data.queue || []);
+  renderPeople(data.listener_people || []);
+  if (Array.isArray(data.chat_log) && !handleMessage._chatSeeded) {
+    handleMessage._chatSeeded = true;
+    data.chat_log.forEach(appendChatMessage);
   }
-  localPlaying = song.playing;
-  $("btn-playpause").textContent = localPlaying ? "⏸" : "▶";
-  startProgressTimer(song.seek, song.duration_sec, song.playing);
+}
+
+function renderQueue(queue) {
+  const el = $("queue-preview");
+  if (!queue.length) { el.innerHTML = ""; return; }
+  el.innerHTML = `<h4 class="section-title">Up next</h4>` + queue.slice(0, 5).map(
+    (q) => `<div class="queue-item"><span class="q-title">${escapeHtml(q.title)}</span><span class="q-dur muted">${escapeHtml(q.duration || "")}</span></div>`
+  ).join("");
+}
+
+function renderPeople(people) {
+  const el = $("people-list");
+  el.innerHTML = "";
+  if (!people.length) {
+    el.innerHTML = `<li class="muted empty-note">Nobody's joined with their Telegram account yet.</li>`;
+    return;
+  }
+  people.forEach((p) => {
+    const li = document.createElement("li");
+    li.className = "people-item";
+    const av = document.createElement("div");
+    av.className = "avatar";
+    av.appendChild(avatarEl(p));
+    const name = document.createElement("span");
+    name.textContent = p.username ? `${p.name} · @${p.username}` : p.name;
+    li.append(av, name);
+    el.appendChild(li);
+  });
 }
 
 function startProgressTimer(seek, duration, playing) {
   stopProgressTimer();
-  let pos = seek;
   const started = Date.now();
   progressTimer = setInterval(() => {
     const elapsed = playing ? (Date.now() - started) / 1000 : 0;
@@ -144,12 +227,8 @@ function startProgressTimer(seek, duration, playing) {
     $("progress-fill").style.width = duration ? `${Math.min(100, (cur / duration) * 100)}%` : "0%";
   }, 500);
 }
-function stopProgressTimer() {
-  if (progressTimer) clearInterval(progressTimer);
-}
+function stopProgressTimer() { if (progressTimer) clearInterval(progressTimer); }
 
-// ── Admin controls — POST to the same admin-gated endpoint the
-// Telegram inline buttons ultimately call into.
 async function sendControl(action) {
   if (!chatId || !userId) return;
   try {
@@ -162,5 +241,35 @@ async function sendControl(action) {
 }
 $("btn-playpause").addEventListener("click", () => sendControl(localPlaying ? "pause" : "resume"));
 $("btn-skip").addEventListener("click", () => sendControl("skip"));
+
+// ── Chat ─────────────────────────────────────────────────
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function appendChatMessage(msg) {
+  const log = $("chat-log");
+  const li = document.createElement("li");
+  li.className = "chat-bubble" + (msg.person?.user_id === userId ? " mine" : "");
+  const av = document.createElement("div");
+  av.className = "avatar avatar-sm";
+  av.appendChild(avatarEl(msg.person || {}));
+  const body = document.createElement("div");
+  body.className = "chat-body";
+  body.innerHTML = `<span class="chat-name">${escapeHtml(msg.person?.name || "Someone")}</span><p>${escapeHtml(msg.text)}</p>`;
+  li.append(av, body);
+  log.appendChild(li);
+  log.scrollTop = log.scrollHeight;
+}
+$("chat-form").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  const input = $("chat-input");
+  const text = input.value.trim();
+  if (!text || !userId || socket?.readyState !== WebSocket.OPEN) {
+    if (!userId) showToast("Open this from Telegram to chat");
+    return;
+  }
+  socket.send(JSON.stringify({ type: "chat", text }));
+  input.value = "";
+});
 
 loadJoinInfo();

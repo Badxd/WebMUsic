@@ -40,6 +40,21 @@
             "value": "",
             "required": true
         },
+        "USE_COOKIES": {
+            "description": "True = try cookies (yt-dlp) first for search/download, API as fallback. False = go straight to the API below, skip cookies entirely.",
+            "value": "True",
+            "required": false
+        },
+        "API_URL": {
+            "description": "Base URL of your own search/download API, e.g. https://your-api.example.com (no trailing slash). Leave empty to rely on cookies/plain yt-dlp only.",
+            "value": "",
+            "required": false
+        },
+        "API_KEY": {
+            "description": "API key for the API above — ADD YOUR OWN.",
+            "value": "",
+            "required": false
+        },
         "WEBAPP_ENABLED": {
             "description": "Run the mini listen-together room website alongside the bot.",
             "value": "True",

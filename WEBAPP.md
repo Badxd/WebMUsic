@@ -29,6 +29,32 @@ queue/call state live, it doesn't run a second playback system.
   progress, listener count, Play/Pause/Skip for admins). No
   chat/profile/playlist tabs bolted on.
 
+## 🙌 Chat / People / Profile tabs
+
+The room is now a small tabbed app (Player / Chat / People / Profile),
+styled after telegram-web-player's cleaner look — but these three new
+tabs are **ephemeral on purpose**, not a new social/database feature:
+
+- **Chat** — a live chat relayed over the same websocket everyone's
+  already connected on. Nothing is saved: it's kept in memory per
+  room (last 50 messages) and disappears once the room is empty.
+  Only Telegram-identified users (opened via the bot, not a bare
+  browser tab) can send messages.
+- **People** — who's actually in the room right now, with their
+  Telegram name/photo (from Telegram's own WebApp data — nothing
+  stored server-side beyond "currently connected").
+- **Profile** — your own name/photo (again, straight from Telegram,
+  no account system) plus a simple "time in this room" counter.
+- **Join/leave toasts** — "X joined 👋" / "X left" shown live to
+  everyone else in the room.
+
+**What this deliberately doesn't include:** a friends system, saved
+playlists/favorites, persistent chat history, or user accounts — all
+of that needs real per-user database storage and its own set of
+endpoints, which is a separate, much bigger project from "make the
+existing room richer." Happy to scope that out properly if you want
+it next.
+
 ## Setup
 
 In your `.env` (see `sample.env`):

@@ -13,7 +13,7 @@ from pathlib import Path
 
 from py_yt import Playlist, VideosSearch
 
-from alonex import logger
+from alonex import config, logger
 from alonex.helpers import Track, utils
 
 
@@ -76,7 +76,118 @@ class YouTube:
     def invalid(self, url: str) -> bool:
         return bool(re.match(self.iregex, url))
 
+    # ── Search: Cookies/API toggle ───────────────────────────
+    # config.USE_COOKIES True  -> cookies (yt-dlp) first, API fallback
+    # config.USE_COOKIES False -> straight to API, cookies skipped
+    # Either way, VideosSearch (py_yt) below stays as the final
+    # fallback so a search never comes back completely empty just
+    # because cookies/API aren't configured yet.
+
+    def _blocking_cookie_search(self, query: str, cookie: str | None) -> dict | None:
+        opts = {
+            "quiet": True, "no_warnings": True, "skip_download": True,
+            "noplaylist": True, "geo_bypass": True, "nocheckcertificate": True,
+            "logger": DummyLogger(), "socket_timeout": 15,
+        }
+        if cookie:
+            opts["cookiefile"] = cookie
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            info = ydl.extract_info(f"ytsearch1:{query}", download=False)
+            entries = (info or {}).get("entries") or []
+            if not entries or not entries[0]:
+                return None
+            e = entries[0]
+            if not e.get("id"):
+                return None
+            return {
+                "id": e.get("id"),
+                "channel": e.get("channel") or e.get("uploader") or "",
+                "duration_sec": int(e.get("duration") or 0),
+                "title": e.get("title", "Unknown"),
+                "thumbnail": e.get("thumbnail") or f"https://img.youtube.com/vi/{e.get('id')}/hqdefault.jpg",
+                "url": f"https://www.youtube.com/watch?v={e.get('id')}",
+                "view_count": str(e.get("view_count") or ""),
+            }
+
+    async def _search_via_cookies(self, query: str) -> dict | None:
+        cookie = self.get_cookies()
+        try:
+            return await asyncio.to_thread(self._blocking_cookie_search, query, cookie)
+        except Exception as e:
+            logger.warning(f"[cookies] search failed for '{query}': {e}")
+            return None
+
+    async def _search_via_api(self, query: str) -> dict | None:
+        """GET {API_URL}/search?query=<q>&api_key=<key> — same
+        API_URL/API_KEY as the downloader. Adjust field names below
+        if your API's response shape differs."""
+        if not (config.API_URL and config.API_KEY):
+            return None
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    f"{config.API_URL}/search",
+                    params={"query": query, "api_key": config.API_KEY},
+                    timeout=aiohttp.ClientTimeout(total=15),
+                ) as resp:
+                    if resp.status != 200:
+                        logger.warning(f"[api] search failed: HTTP {resp.status}")
+                        return None
+                    data = await resp.json(content_type=None)
+        except Exception as e:
+            logger.warning(f"[api] search error for '{query}': {e}")
+            return None
+
+        if isinstance(data, list):
+            data = data[0] if data else None
+        if not isinstance(data, dict):
+            return None
+
+        vid = data.get("id") or data.get("videoId") or ""
+        url = data.get("url") or data.get("link") or (f"{self.base}{vid}" if vid else None)
+        title = data.get("title")
+        if not url or not title:
+            return None
+        return {
+            "id": vid,
+            "channel": data.get("channel") or "",
+            "duration_sec": int(data.get("duration_sec") or data.get("seconds") or 0),
+            "title": title,
+            "thumbnail": data.get("thumbnail") or data.get("thumb")
+                         or (f"https://img.youtube.com/vi/{vid}/hqdefault.jpg" if vid else ""),
+            "url": url,
+            "view_count": str(data.get("view_count") or ""),
+        }
+
+    async def _search_resolved(self, query: str) -> dict | None:
+        if config.USE_COOKIES:
+            got = await self._search_via_cookies(query)
+            if got:
+                return got
+            logger.info(f"[search] cookies failed, trying API for '{query}'")
+            return await self._search_via_api(query)
+        return await self._search_via_api(query)
+
     async def search(self, query: str, m_id: int, video: bool = False) -> Track | None:
+        resolved = await self._search_resolved(query)
+        if resolved:
+            dur_sec = resolved["duration_sec"]
+            m, s = divmod(dur_sec, 60)
+            h, m = divmod(m, 60)
+            duration_str = f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
+            return Track(
+                id=resolved["id"],
+                channel_name=resolved["channel"],
+                duration=duration_str,
+                duration_sec=dur_sec,
+                message_id=m_id,
+                title=resolved["title"][:25],
+                thumbnail=resolved["thumbnail"],
+                url=resolved["url"],
+                view_count=resolved["view_count"],
+                video=video,
+            )
+
         try:
             _search = VideosSearch(query, limit=1, with_live=False)
             results = await _search.next()

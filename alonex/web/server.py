@@ -14,6 +14,7 @@ nothing here duplicates AloneX's playback logic.
 Speed is intentionally NOT controllable from here — see
 alonex/plugins/speed.py: it's a group-chat command only.
 """
+import json
 import logging
 import os
 import time
@@ -68,6 +69,7 @@ async def build_state(chat_id: int) -> dict:
     media = queue.get_current(chat_id)
     is_live = bool(await db.get_call(chat_id))
     return {
+        "type":      "state",
         "chat_id":   chat_id,
         "chat_name": await _chat_title(chat_id),
         "active":    is_live and media is not None,
@@ -76,8 +78,24 @@ async def build_state(chat_id: int) -> dict:
             {"title": m.title, "duration": m.duration, "requested_by": m.user}
             for m in queue.get_queue(chat_id)
         ][:20],
-        "listeners": room_state.listener_count(chat_id),
+        "listeners":      room_state.listener_count(chat_id),
+        "listener_people": room_state.listener_people(chat_id)[:50],
+        "chat_log":       room_state.chat_log.get(chat_id, [])[-30:],
     }
+
+
+async def _send_to_room(chat_id: int, payload: dict, skip: "WebSocket" = None):
+    from alonex.web.state import room_state
+    dead = []
+    for ws in list(room_state.listeners.get(chat_id, ())):
+        if ws is skip:
+            continue
+        try:
+            await ws.send_json(payload)
+        except Exception:
+            dead.append(ws)
+    for ws in dead:
+        room_state.remove_listener(chat_id, ws)
 
 
 async def broadcast(chat_id: int):
@@ -102,6 +120,12 @@ async def broadcast(chat_id: int):
             dead.append(ws)
     for ws in dead:
         room_state.remove_listener(chat_id, ws)
+
+
+async def broadcast_system(chat_id: int, event: str, person: dict):
+    """'X joined the room' / 'X left' — ephemeral, shown as a toast on
+    every open tab, never written to any database."""
+    await _send_to_room(chat_id, {"type": "system", "event": event, "person": person})
 
 
 def create_app() -> FastAPI:
@@ -150,23 +174,48 @@ def create_app() -> FastAPI:
 
     @app_.websocket("/ws/{chat_id}/{user_id}")
     async def ws_room(websocket: WebSocket, chat_id: int, user_id: int = 0):
+        import time as _t
         from alonex.helpers import is_admin
         from alonex.web.state import room_state
 
+        q = websocket.query_params
+        person = {
+            "user_id":    user_id,
+            "name":       (q.get("name") or "Guest")[:40],
+            "username":   q.get("username") or "",
+            "photo_url":  q.get("photo") or "",
+        }
+
         await websocket.accept()
         websocket.is_admin_flag = await is_admin(chat_id, user_id) if user_id else False
+        websocket.person = person
         room_state.add_listener(chat_id, websocket)
         try:
             first = await build_state(chat_id)
             first["is_admin"] = websocket.is_admin_flag
             await websocket.send_json(first)
-            await broadcast(chat_id)  # update listener count for everyone
+            await broadcast(chat_id)  # update listener count/people for everyone
+            if user_id:
+                await broadcast_system(chat_id, "joined", person)
+
             while True:
-                # Website doesn't push anything over the socket except a
-                # periodic ping to keep the connection alive — all real
-                # actions go through POST /api/control (simpler to gate
-                # with is_admin there than inside a long-lived socket).
-                await websocket.receive_text()
+                raw = await websocket.receive_text()
+                if raw == "ping":
+                    continue  # client keep-alive, nothing to do
+                try:
+                    msg = json.loads(raw)
+                except Exception:
+                    continue
+
+                if msg.get("type") == "chat":
+                    text = str(msg.get("text", "")).strip()[:300]
+                    if not text or not user_id:
+                        continue
+                    chat_msg = {
+                        "type": "chat", "person": person, "text": text, "ts": _t.time(),
+                    }
+                    room_state.add_chat(chat_id, chat_msg)
+                    await _send_to_room(chat_id, chat_msg)
         except WebSocketDisconnect:
             pass
         except Exception as e:
@@ -174,6 +223,11 @@ def create_app() -> FastAPI:
         finally:
             room_state.remove_listener(chat_id, websocket)
             await broadcast(chat_id)
+            if user_id and not any(
+                getattr(w, "person", {}).get("user_id") == user_id
+                for w in room_state.listeners.get(chat_id, ())
+            ):
+                await broadcast_system(chat_id, "left", person)
 
     app_.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     return app_
