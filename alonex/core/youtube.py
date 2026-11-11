@@ -222,21 +222,35 @@ class YouTube:
             logger.warning(f"[api] couldn't save download: {e}")
             return None
 
+    @staticmethod
+    def _valid_file(path: str | None) -> bool:
+        """Reject empty/corrupt/truncated downloads before they ever
+        reach pytgcalls — an invalid file otherwise crashes deep
+        inside pytgcalls' own ffprobe check (ProcessLookupError /
+        JSONDecodeError), which play_media() can't cleanly recover
+        from since it isn't one of pytgcalls' documented exceptions."""
+        try:
+            return bool(path) and os.path.getsize(path) > 10_000
+        except OSError:
+            return False
+
     async def download(self, video_id: str, video: bool = False) -> str | None:
         ext = "mp4" if video else "webm"
         filename = f"downloads/{video_id}.{ext}"
-        if Path(filename).exists():
+        if self._valid_file(filename):
             return filename
 
         if config.USE_COOKIES:
             got = await self._download_via_ytdlp(video_id, video, use_cookies=True)
-            if got:
+            if self._valid_file(got):
                 return got
-            logger.info(f"[download] cookies failed, trying API for {video_id}")
-            return await self._download_via_api(video_id, video)
+            logger.info(f"[download] cookies failed/invalid, trying API for {video_id}")
+            got = await self._download_via_api(video_id, video)
+            return got if self._valid_file(got) else None
 
         got = await self._download_via_api(video_id, video)
-        if got:
+        if self._valid_file(got):
             return got
         logger.info(f"[download] API not used/failed, trying plain yt-dlp for {video_id}")
-        return await self._download_via_ytdlp(video_id, video, use_cookies=False)
+        got = await self._download_via_ytdlp(video_id, video, use_cookies=False)
+        return got if self._valid_file(got) else None

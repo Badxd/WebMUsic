@@ -3,6 +3,8 @@
 # This file is part of AloneXMusic
 
 
+import os
+
 from ntgcalls import (ConnectionNotFound, TelegramServerError,
                       RTMPStreamingUnsupported, ConnectionError,
                       TransportParseException)
@@ -168,6 +170,26 @@ class TgCall(PyTgCalls):
         except RTMPStreamingUnsupported:
             await self.stop(chat_id)
             await message.edit_text(_lang["error_rtmp"])
+        except Exception as e:
+            # Catch-all: pytgcalls can raise things that aren't in its
+            # own documented exception list — e.g. ffprobe choking on
+            # a corrupt/truncated download (ProcessLookupError wrapped
+            # around a JSONDecodeError). Without this, that crash goes
+            # straight to pyrogram's dispatcher as an unhandled error:
+            # the user never finds out /play failed, and the
+            # "Downloading..." message is left stuck forever.
+            logger.error(f"play_media[{chat_id}] unexpected error: {e!r}")
+            try:
+                if media.file_path and os.path.exists(media.file_path):
+                    os.remove(media.file_path)  # don't retry the same bad file
+                    media.file_path = None
+            except Exception:
+                pass
+            try:
+                await message.edit_text(_lang["error_no_file"].format(config.SUPPORT_CHAT))
+            except Exception:
+                pass
+            await self.play_next(chat_id)
 
 
     async def replay(self, chat_id: int) -> None:

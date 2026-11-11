@@ -36,15 +36,16 @@ async def start(_, message: types.Message):
     )
 
     key = buttons.start_key(message.lang, private)
+    # This kurigram version's reply_photo() doesn't accept `quote` OR
+    # `reply_to_message_id` (both raised TypeError) — unlike
+    # reply_text() just above, which does support `quote`. So instead
+    # of guessing at a 3rd parameter name, just send the photo as a
+    # normal message in the chat; it doesn't visually "quote" the
+    # /start command, which is a cosmetic difference only.
     await message.reply_photo(
         photo=config.START_IMG,
         caption=_text,
         reply_markup=key,
-        # this kurigram version's reply_photo() has no `quote` kwarg
-        # (that's what was crashing /start) — reply_to_message_id is
-        # the real param that does the same "quote in groups, not in
-        # DMs" thing.
-        reply_to_message_id=message.id if not private else None,
     )
 
     if private:
