@@ -340,35 +340,53 @@ class YouTube:
             logger.warning(f"[api] couldn't save download: {e}")
             return None
 
-    @staticmethod
-    def _valid_file(path: str | None) -> bool:
+    async def _valid_file(self, path: str | None) -> bool:
         """Reject empty/corrupt/truncated downloads before they ever
         reach pytgcalls — an invalid file otherwise crashes deep
         inside pytgcalls' own ffprobe check (ProcessLookupError /
         JSONDecodeError), which play_media() can't cleanly recover
-        from since it isn't one of pytgcalls' documented exceptions."""
+        from since it isn't one of pytgcalls' documented exceptions.
+
+        A size check alone isn't enough — a file can be a plausible
+        size and still be unplayable (truncated webm, a half-written
+        file from a dropped connection), so this asks ffprobe directly
+        "can you actually decode this?", the same thing pytgcalls
+        itself checks right before it used to crash on a bad one."""
+        if not path or not os.path.exists(path) or os.path.getsize(path) < 10_000:
+            return False
         try:
-            return bool(path) and os.path.getsize(path) > 10_000
-        except OSError:
+            proc = await asyncio.create_subprocess_exec(
+                "ffprobe", "-v", "error",
+                "-show_entries", "format=duration",
+                "-of", "default=noprint_wrappers=1:nokey=1",
+                path,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.DEVNULL,
+            )
+            stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=15)
+            duration = float(stdout.decode().strip() or 0)
+            return duration > 0
+        except Exception:
             return False
 
     async def download(self, video_id: str, video: bool = False) -> str | None:
         ext = "mp4" if video else "webm"
         filename = f"downloads/{video_id}.{ext}"
-        if self._valid_file(filename):
+        if await self._valid_file(filename):
             return filename
 
         if config.USE_COOKIES:
             got = await self._download_via_ytdlp(video_id, video, use_cookies=True)
-            if self._valid_file(got):
+            if await self._valid_file(got):
                 return got
             logger.info(f"[download] cookies failed/invalid, trying API for {video_id}")
             got = await self._download_via_api(video_id, video)
-            return got if self._valid_file(got) else None
+            return got if await self._valid_file(got) else None
 
         got = await self._download_via_api(video_id, video)
-        if self._valid_file(got):
+        if await self._valid_file(got):
             return got
         logger.info(f"[download] API not used/failed, trying plain yt-dlp for {video_id}")
         got = await self._download_via_ytdlp(video_id, video, use_cookies=False)
-        return got if self._valid_file(got) else None
+        return got if await self._valid_file(got) else None
+                             
