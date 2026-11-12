@@ -84,7 +84,125 @@ class YouTube:
     # always came back HTTP 404. USE_COOKIES + API_URL/API_KEY still
     # fully apply to download() below, exactly like ShizuMusic.
 
+    # ── Search: YouTube's own Innertube API first ────────────
+    # py_yt's VideosSearch scrapes YouTube's HTML search page, which
+    # YouTube increasingly blocks/breaks without warning — that's the
+    # actual "search just doesn't work" complaint. This instead calls
+    # the same JSON endpoint youtube.com's own web player calls
+    # (yt-dlp uses the same technique internally). The API key below
+    # is YouTube's own public web-client key — not config.API_KEY,
+    # and not a secret; it's baked into every youtube.com page load.
+    _INNERTUBE_KEY = "AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw"
+    _INNERTUBE_CTX = {"client": {"clientName": "WEB", "clientVersion": "2.20250101.01.00", "hl": "en", "gl": "US"}}
+
+    @staticmethod
+    def _yt_text(node) -> str:
+        if not isinstance(node, dict):
+            return ""
+        if "simpleText" in node:
+            return node["simpleText"]
+        if "runs" in node:
+            return "".join(r.get("text", "") for r in node["runs"])
+        return ""
+
+    @staticmethod
+    def _parse_clock(text: str) -> int:
+        try:
+            parts = [int(p) for p in text.strip().split(":")]
+        except ValueError:
+            return 0
+        if len(parts) == 3:
+            return parts[0] * 3600 + parts[1] * 60 + parts[2]
+        if len(parts) == 2:
+            return parts[0] * 60 + parts[1]
+        return parts[0] if parts else 0
+
+    def _find_video_renderer(self, node):
+        """Innertube nests results arbitrarily deep — walk the whole
+        tree for the first videoRenderer block (skips live/premieres,
+        which have no lengthText)."""
+        if isinstance(node, dict):
+            vr = node.get("videoRenderer")
+            if vr and vr.get("lengthText"):
+                return vr
+            for v in node.values():
+                found = self._find_video_renderer(v)
+                if found:
+                    return found
+        elif isinstance(node, list):
+            for item in node:
+                found = self._find_video_renderer(item)
+                if found:
+                    return found
+        return None
+
+    async def _search_innertube(self, query: str) -> dict | None:
+        payload = {
+            "context": self._INNERTUBE_CTX,
+            "query": query,
+            "params": "EgIQAQ==",  # filter: Type = Video (no channels/playlists)
+        }
+        headers = {
+            "Content-Type": "application/json",
+            "Referer": "https://www.youtube.com/",
+            "Origin": "https://www.youtube.com",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                           "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        }
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    "https://www.youtube.com/youtubei/v1/search",
+                    params={"key": self._INNERTUBE_KEY, "prettyPrint": "false"},
+                    json=payload, headers=headers,
+                    timeout=aiohttp.ClientTimeout(total=15),
+                ) as resp:
+                    if resp.status != 200:
+                        logger.warning(f"[innertube] search failed: HTTP {resp.status}")
+                        return None
+                    data = await resp.json(content_type=None)
+        except Exception as e:
+            logger.warning(f"[innertube] search error for '{query}': {e}")
+            return None
+
+        vr = self._find_video_renderer(data)
+        if not vr or not vr.get("videoId"):
+            return None
+
+        vid = vr["videoId"]
+        title = self._yt_text(vr.get("title")) or "Unknown"
+        channel = self._yt_text(vr.get("ownerText")) or self._yt_text(vr.get("longBylineText")) or ""
+        duration_sec = self._parse_clock(self._yt_text(vr.get("lengthText")))
+        views = re.sub(r"[^\d]", "", self._yt_text(vr.get("viewCountText"))) or ""
+        thumbs = (vr.get("thumbnail") or {}).get("thumbnails") or []
+        thumb = thumbs[-1]["url"].split("?")[0] if thumbs else f"https://img.youtube.com/vi/{vid}/hqdefault.jpg"
+
+        return {
+            "id": vid, "title": title, "channel": channel,
+            "duration_sec": duration_sec, "view_count": views, "thumbnail": thumb,
+        }
+
     async def search(self, query: str, m_id: int, video: bool = False) -> Track | None:
+        innertube = await self._search_innertube(query)
+        if innertube:
+            dur = innertube["duration_sec"]
+            m, s = divmod(dur, 60)
+            h, m = divmod(m, 60)
+            duration_str = f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
+            return Track(
+                id=innertube["id"],
+                channel_name=innertube["channel"],
+                duration=duration_str,
+                duration_sec=dur,
+                message_id=m_id,
+                title=innertube["title"][:25],
+                thumbnail=innertube["thumbnail"],
+                url=f"{self.base}{innertube['id']}",
+                view_count=innertube["view_count"],
+                video=video,
+            )
+
+        logger.info(f"[search] innertube failed, trying VideosSearch for '{query}'")
         try:
             _search = VideosSearch(query, limit=1, with_live=False)
             results = await _search.next()

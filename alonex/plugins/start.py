@@ -9,7 +9,7 @@ from alonex import app, config, db, lang
 from alonex.helpers import buttons, utils
 
 
-@app.on_message(filters.command(["help"]) & filters.private & ~app.bl_users)
+@app.on_message(filters.command(["help"]) & ~app.bl_users)
 @lang.language()
 async def _help(_, m: types.Message):
     await m.reply_text(
