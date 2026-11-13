@@ -366,6 +366,14 @@ class YouTube:
             stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=15)
             duration = float(stdout.decode().strip() or 0)
             return duration > 0
+        except FileNotFoundError:
+            # ffprobe itself isn't on PATH on this host — don't reject
+            # every single download because of that; fall back to the
+            # size check so playback can still work (ffmpeg being
+            # missing entirely is a deploy/Aptfile problem, not
+            # something to silently fail every song over).
+            logger.warning("ffprobe not found on PATH — falling back to size-only validation.")
+            return True
         except Exception:
             return False
 
@@ -389,4 +397,4 @@ class YouTube:
         logger.info(f"[download] API not used/failed, trying plain yt-dlp for {video_id}")
         got = await self._download_via_ytdlp(video_id, video, use_cookies=False)
         return got if await self._valid_file(got) else None
-                             
+                                                                      
