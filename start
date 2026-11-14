@@ -1,2 +1,1 @@
-#!/bin/bash
-python3 -m alonex
+uv run python3 -m anony

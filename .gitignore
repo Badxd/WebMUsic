@@ -8,7 +8,7 @@ venv/
 cache/
 downloads/
 __pycache__/
-alonex/cookies/*.txt
+anony/cookies/*.txt
 *.session
 *.session-journal
 

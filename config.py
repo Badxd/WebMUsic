@@ -22,8 +22,8 @@ class Config:
         self.SESSION2 = getenv("SESSION2", None)
         self.SESSION3 = getenv("SESSION3", None)
 
-        self.SUPPORT_CHANNEL = getenv("SUPPORT_CHANNEL", "https://t.me/PBX_UPDATE")
-        self.SUPPORT_CHAT = getenv("SUPPORT_CHAT", "https://t.me/PBXCHATS")
+        self.SUPPORT_CHANNEL = getenv("SUPPORT_CHANNEL", "https://t.me/fallenx")
+        self.SUPPORT_CHAT = getenv("SUPPORT_CHAT", "https://t.me/DevilsHeavenMF")
 
         self.AUTO_LEAVE: bool = getenv("AUTO_LEAVE", "False").lower() == "true"
         self.AUTO_END: bool = getenv("AUTO_END", "False").lower() == "true"
@@ -42,8 +42,9 @@ class Config:
         # True  -> try cookies (yt-dlp) first, fall back to the API below
         # False -> go straight to the API, skip cookies entirely
         self.USE_COOKIES: bool = getenv("USE_COOKIES", "True").lower() == "true"
-        # Your own search/download API's base URL + key — nothing is
+        # Your own download API's base URL + key — nothing is
         # hard-coded. Leave empty to rely on cookies/plain yt-dlp only.
+        # (Search never uses this API — see core/youtube.py for why.)
         self.API_URL = getenv("API_URL", "").strip().rstrip("/")
         self.API_KEY = getenv("API_KEY", "").strip()
 

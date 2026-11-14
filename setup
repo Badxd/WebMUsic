@@ -43,6 +43,34 @@ install_pkgs() {
     fi
 }
 
+install_deno() {
+    pprint "\n\nInstalling Deno...\n" "cblue"
+
+    if command -v deno &>/dev/null; then
+        pprint "Deno already installed.\n" "cgreen"
+        return
+    fi
+
+    if curl -fsSL https://deno.land/install.sh | sh; then
+        deno_path="$HOME/.deno/bin"
+
+        if ! grep -q 'DENO_INSTALL' "$HOME/.bashrc"; then
+            {
+                echo 'export DENO_INSTALL="$HOME/.deno"'
+                echo 'export PATH="$DENO_INSTALL/bin:$PATH"'
+            } >> "$HOME/.bashrc"
+            pprint "Deno path added to ~/.bashrc\n" "cyellow"
+        fi
+
+        export DENO_INSTALL="$HOME/.deno"
+        export PATH="$DENO_INSTALL/bin:$PATH"
+
+        pprint "Deno installation complete.\n" "cgreen"
+    else
+        pprint "Deno installation failed.\n" "cred"
+    fi
+}
+
 install_uv() {
     if ! command -v uv &>/dev/null; then
         pprint "\nInstalling uv...\n" "cblue"
@@ -78,21 +106,19 @@ MONGO_URL=$4
 LOGGER_ID=$5
 SESSION=$6
 OWNER_ID=$7
-USE_COOKIES=$8
-API_URL=$9
-API_KEY=${10}
 EOF
 }
 
 
-pprint "Welcome to the AloneXMusic Installation Setup\n\n" "cmagenta"
+pprint "Welcome to the AnonXMusic Installation Setup\n\n" "cmagenta"
 
 update
 install_pkgs python3 python3-venv ffmpeg curl unzip
 install_uv || exit 1
+install_deno
 install_py
 
-pprint "\nAloneXMusic Installation Completed.\n" "cgreen"
+pprint "\nAnonXMusic Installation Completed.\n" "cgreen"
 
 pprint "\nEnter Your Values Below\n\n\n" "cmagenta"
 read -rp "API ID: " api_id
@@ -103,12 +129,6 @@ read -rp "MONGO URL: " mongo_db
 read -rp "LOG GROUP ID: " logger
 read -rp "STRING SESSION: " string_session
 
-pprint "\nOptional — press Enter to skip any of these:\n" "cblue"
-read -rp "Use Cookies first for search/download? [True/False] (default True): " use_cookies
-read -rp "API URL (your own search/download API, blank = none): " api_url
-read -rp "API KEY (for the API URL above, blank = none): " api_key
-use_cookies="${use_cookies:-True}"
-
-save_env_vars "$api_id" "$api_hash" "$bot_token" "$mongo_db" "$logger" "$string_session" "$ownid" "$use_cookies" "$api_url" "$api_key"
+save_env_vars "$api_id" "$api_hash" "$bot_token" "$mongo_db" "$logger" "$string_session" "$ownid"
 
 pprint "\nSetup complete! Start the bot using:\n\n  bash start\n\n" "cgreen"
