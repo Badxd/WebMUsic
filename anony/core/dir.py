@@ -1,6 +1,6 @@
 import os
 
-from ..logging import LOGGER
+from anony import logger as LOGGER
 
 
 def dirr():
