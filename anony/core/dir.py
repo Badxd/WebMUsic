@@ -1,25 +1,20 @@
-# Copyright (c) 2025 AnonymousX1025
-# Licensed under the MIT License.
-# This file is part of AnonXMusic
+import os
+
+from ..logging import LOGGER
 
 
-import shutil
-from pathlib import Path
+def dirr():
+    for file in os.listdir():
+        if file.endswith(".jpg"):
+            os.remove(file)
+        elif file.endswith(".jpeg"):
+            os.remove(file)
+        elif file.endswith(".png"):
+            os.remove(file)
 
-from anony import logger
+    if "downloads" not in os.listdir():
+        os.mkdir("downloads")
+    if "cache" not in os.listdir():
+        os.mkdir("cache")
 
-
-def ensure_dirs():
-    """
-    Ensure that the necessary directories exist.
-    """
-    # Only ffmpeg is actually used anywhere in this codebase (audio
-    # streaming/processing) — `deno` isn't referenced by anything else
-    # in the project, so requiring it here just crashes every deploy
-    # for no functional reason. Dropped.
-    if not shutil.which("ffmpeg"):
-        raise RuntimeError("FFmpeg must be installed and accessible in the system PATH.")
-
-    for dir in ["cache", "downloads"]:
-        Path(dir).mkdir(parents=True, exist_ok=True)
-    logger.info("Cache directories updated.")
+    LOGGER(__name__).info("Directories Updated.")
