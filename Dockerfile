@@ -1,31 +1,14 @@
-
-FROM python:3.10-slim
-
-ENV DENO_INSTALL=/root/.deno
-ENV PATH="/root/.deno/bin:${PATH}"
+FROM python:3.13-slim
 
 WORKDIR /app
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        build-essential \
-        ffmpeg \
-        curl \
-        unzip \
-        git \
-        ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
-
-RUN curl -fsSL https://deno.land/install.sh | sh && \
-    command -v deno && \
-    deno --version && \
-    command -v ffmpeg && \
-    ffmpeg -version
+RUN apt-get update -y \
+    && apt-get install -y --no-install-recommends ffmpeg curl unzip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./
-
-RUN python -m pip install --upgrade pip && \
-    python -m pip install --no-cache-dir --prefer-binary -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 

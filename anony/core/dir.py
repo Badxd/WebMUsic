@@ -13,8 +13,12 @@ def ensure_dirs():
     """
     Ensure that the necessary directories exist.
     """
-    if not shutil.which("deno") or not shutil.which("ffmpeg"):
-        raise RuntimeError("Deno and FFmpeg must be installed and accessible in the system PATH.")
+    # Only ffmpeg is actually used anywhere in this codebase (audio
+    # streaming/processing) — `deno` isn't referenced by anything else
+    # in the project, so requiring it here just crashes every deploy
+    # for no functional reason. Dropped.
+    if not shutil.which("ffmpeg"):
+        raise RuntimeError("FFmpeg must be installed and accessible in the system PATH.")
 
     for dir in ["cache", "downloads"]:
         Path(dir).mkdir(parents=True, exist_ok=True)
