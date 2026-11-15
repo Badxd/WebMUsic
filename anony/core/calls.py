@@ -260,7 +260,10 @@ class TgCall(PyTgCalls):
     async def boot(self) -> None:
         PyTgCallsSession.notice_displayed = True
         for ub in userbot.clients:
-            client = PyTgCalls(ub, cache_duration=100)
+            # `cache_duration` isn't accepted by the pinned py-tgcalls/
+            # ntgcalls version (3.0.0/3.0.6) — that constructor kwarg
+            # was from a different version. Default caching is fine.
+            client = PyTgCalls(ub)
             await client.start()
             self.clients.append(client)
             await self.decorators(client)
