@@ -1,1 +1,8 @@
-uv run python3 -m anony
+#!/bin/bash
+# Works both on Heroku (global python3, no .venv) and after running
+# ./setup on a VPS (which creates .venv).
+if [ -f .venv/bin/python3 ]; then
+    exec .venv/bin/python3 -m anony
+else
+    exec python3 -m anony
+fi
