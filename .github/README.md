@@ -1,187 +1,124 @@
-<div align="center">
+<h1 align="center">🎧 NØX BEATS</h1>
 
-<h2>AnonXMusic</h2>
+<p align="center">
+  <img src="https://files.catbox.moe/z5febs.png" alt="NØX BEATS" width="520">
+</p>
 
-<b>Telegram Group Calls Streaming Bot</b><br>
-Supports YouTube, Spotify, Resso, Apple Music, SoundCloud and M3U8 links.
+<p align="center">
+  <b>A Telegram voice-chat music bot built with C++20.</b><br>
+  Powered by ntgcalls, MongoDB, FFmpeg and yt-dlp.
+</p>
 
-<a href="https://github.com/AnonymousX1025/AnonXMusic/stargazers">
-    <img src="https://img.shields.io/github/stars/AnonymousX1025/AnonXMusic?color=blueviolet&logo=github&logoColor=black&style=for-the-badge" alt="Stars"/>
-</a>
-<a href="https://github.com/AnonymousX1025/AnonXMusic/network/members">
-    <img src="https://img.shields.io/github/forks/AnonymousX1025/AnonXMusic?color=blueviolet&logo=github&logoColor=black&style=for-the-badge" alt="Forks"/>
-</a>
-<a href="https://github.com/AnonymousX1025/AnonXMusic/blob/master/LICENSE">
-    <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License"/>
-</a>
-<a href="https://www.python.org/">
-    <img src="https://img.shields.io/badge/Written%20in-Python-blue?style=for-the-badge&logo=python" alt="Python"/>
-</a>
-<br>
+<p align="center">
+  <img src="https://img.shields.io/badge/C%2B%2B-20-00599C?logo=cplusplus" alt="C++20">
+  <img src="https://img.shields.io/badge/Voice-ntgcalls-8A2BE2" alt="ntgcalls">
+  <img src="https://img.shields.io/badge/Database-MongoDB-47A248?logo=mongodb&logoColor=white" alt="MongoDB">
+</p>
 
-<img src="https://github.com/AnonymousX1025/AnonXMusic/blob/master/.github/anonx.jpg" width="720" height="auto">
+## Features
 
-AnonXMusic lets you stream high-quality and low-latency audio and video playback into telegram group video chats.<br>
-Built with Python, Pyrogram, and Py-TgCalls, it’s optimized for reliability and easy deployment on Heroku, VPS, or Docker.
-</div>
+- Play audio or video from a song name, link, playlist, or replied media.
+- Queue, pause, resume, skip, stop, seek and loop controls.
+- Autoplay (related songs when the queue ends) and a per-chat thumbnail switch.
+- Personal playlists (`/addplaylist`, `/playlist`, `/rmplaylist`, `/playplaylist`).
+- Spotify, Apple Music, JioSaavn and SoundCloud links, m3u8 streams, channel play (`/cplay`), speed/jump/mute, queue tools and RTMP streaming.
+- Admin tools, authorized users and per-chat settings.
+- Up to 10 assistant accounts (`SESSION` … `SESSION10`) to spread the voice chats.
+- Multiple interface languages.
+- MongoDB-backed settings that persist across restarts.
+- Optional download API or yt-dlp support.
 
-<hr>
+## Commands
 
-<h2>🔥 Features</h2>
+| Command | Description |
+| --- | --- |
+| `/play <name/link>` | Play audio |
+| `/vplay <name/link>` | Play video |
+| `/queue` | Show the queue |
+| `/pause` / `/resume` | Pause or resume playback |
+| `/skip` | Skip the current track |
+| `/stop` | Stop playback and clear the queue |
+| `/loop` | Toggle track looping |
+| `/autoplay` | Autoplay on/off, language and mood |
+| `/thumbnail` | Thumbnail on/off |
+| `/lang` | Change language |
+| `/help` / `/start` | Open the help menu |
 
-- 🎧 Stream low-latency audio in real time to <b>Telegram group video chats</b>
-- 🌐 Supports multiple platforms like <b>YouTube, Spotify, Apple Music, SoundCloud</b>
-- ⚡ Advanced queue management with auto-play
-- ⚙️ Easy deployment — works on Local, VPS, or Heroku
-- ❤️ Built with Python
-<hr>
+Some commands are restricted to admins, authorized users, or the bot owner.
 
-<h2>☁️ Manual Deployment</h2>
+<p align="center">
+  <a href="COMMANDS.md"><img src="https://img.shields.io/badge/Full%20Command%20List-COMMANDS.md-FF0000?style=for-the-badge" alt="Full command list"></a>
+  <a href="MORE.md"><img src="https://img.shields.io/badge/More%20Details-MORE.md-181717?style=for-the-badge" alt="More details"></a>
+</p>
 
-<h3>✔️ Prerequisites</h3>
+## Deployment
 
-- <a href="https://www.python.org">Python 3.11+</a> installed  
-- <a href="https://deno.com/">deno</a> & <a href="https://ffmpeg.org/">ffmpeg</a> installed on your system  
-- Required variables mentioned in <a href="https://github.com/AnonymousX1025/AnonXMusic/blob/master/sample.env">sample.env</a>
+Deploy using one of the supported platforms:
 
-<details>
-    <summary>
-        <h3>Local / VPS Setup</h3>
-    </summary>
+<p align="center">
+  <a href="https://dashboard.heroku.com/new?template=https://github.com/Badmunda05/NoxBeats"><img src="https://img.shields.io/badge/Deploy%20to-Heroku-430098?style=for-the-badge&logo=heroku&logoColor=white" alt="Deploy to Heroku"></a>
+  <a href="https://app.koyeb.com/deploy?type=git&repository=github.com/Badmunda05/NoxBeats&branch=main&name=noxbeats"><img src="https://img.shields.io/badge/Deploy%20to-Koyeb-121212?style=for-the-badge&logo=koyeb&logoColor=white" alt="Deploy to Koyeb"></a>
+  <a href="https://render.com/deploy?repo=https://github.com/Badmunda05/NoxBeats"><img src="https://img.shields.io/badge/Deploy%20to-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white" alt="Deploy to Render"></a>
+  <a href="https://railway.app/new/template?template=https://github.com/Badmunda05/NoxBeats"><img src="https://img.shields.io/badge/Deploy%20to-Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white" alt="Deploy to Railway"></a>
+</p>
 
-
-<h4>🐧 Linux/macOS</h4>
-
-```bash
-git clone https://github.com/AnonymousX1025/AnonXMusic && cd AnonXMusic
-
-# Install uv
-curl -Ls https://astral.sh/uv/install.sh | sh
-export PATH="$HOME/.local/bin:$PATH"
-
-# Install dependencies
-uv sync --frozen
-
-# Rename and configure environment variables
-mv sample.env .env
-# Edit .env with your credentials
-
-# Start the bot
-bash start
-```
-
-<h4>🪟 Windows (PowerShell)</h4>
+For VPS deployment, use Docker:
 
 ```bash
-git clone https://github.com/AnonymousX1025/AnonXMusic && cd AnonXMusic
-
-# Install uv
-irm https://astral.sh/uv/install.ps1 | iex
-
-# Install dependencies
-uv sync --frozen
-
-# Rename and configure environment variables
-mv sample.env .env
-# Edit .env with your credentials
-
-# Start the bot
-uv run python3 -m anony
-
-> ⭐ or use Git Bash or WSL to run `bash start`.
+git clone https://github.com/Badmunda05/NoxBeats
+cd NoxBeats
+docker build -t noxbeats .
+docker run -d --name noxbeats --restart unless-stopped --env-file .env noxbeats
 ```
 
-</details>
+Create a `.env` file with the required configuration before starting the bot.
 
-<details>
-    <summary>
-        <h3>Deploy to Heroku</h3>
-    </summary>
+## Configuration
 
-> Click on the button below to deploy on Heroku<br>
-    <a href="https://dashboard.heroku.com/new?template=https://github.com/AnonymousX1025/AnonXMusic">
-        <img src="https://img.shields.io/badge/Deploy%20On%20Heroku-black?style=for-the-badge&logo=heroku"/>
-    </a>
-</details>
+Required environment variables:
 
-<hr>
+| Variable | Purpose |
+| --- | --- |
+| `API_ID` | Telegram API ID |
+| `API_HASH` | Telegram API hash |
+| `BOT_TOKEN` | Bot token from [@BotFather](https://t.me/BotFather) |
+| `SESSION` | Assistant account string session |
+| `LOGGER_ID` | Log group ID |
+| `OWNER_ID` | Bot owner's Telegram user ID |
+| `MONGO_DB_URI` | MongoDB connection URI |
 
-<h2>⚙️ Configuration</h2>
+Optional variables include `SESSION2` … `SESSION10`, `SESSION_TYPE`, `API_URL`, `API_KEY`, `COOKIES_URL`, `USE_COOKIES`, `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `DURATION_LIMIT`, `QUEUE_LIMIT`, `PLAYLIST_LIMIT`, `AUTO_LEAVE`, `AUTO_END`, `THUMB_GEN`, `VIDEO_PLAY`, `LANG_CODE`, `SUPPORT_CHANNEL`, `SUPPORT_CHAT` and `SOURCE_URL`.
 
-Edit <code>.env</code> (or set variables in your hosting environment):
-<details>
-    <summary>Here's an example of the .env file</summary>
+Keep credentials and session strings private. Never commit your `.env` file.
 
-```env
-API_ID=123456
-API_HASH=abcdef1234567890
-BOT_TOKEN=123456:ABC-DEF
-OWNER_ID=123456789
-LOGGER_ID=-1001234567890
-MONGO_URL=mongodb+srv://
-SESSION=BQgfh...AA
-```
+## Troubleshooting
 
-> 📝 Check <a href="https://github.com/AnonymousX1025/AnonXMusic/blob/master/config.py">config.py</a> for all available options.
-</details>
+- **MongoDB connection failed:** Check `MONGO_DB_URI` and your database network access.
+- **Assistant authentication error:** Make sure the session is valid and isn't being used by another running instance.
+- **No audio or voice-chat join:** Ensure the assistant can access the group and the voice chat is active.
+- **Download failed:** Check the download API settings or yt-dlp configuration and logs.
 
-<hr>
+## Credits
 
-<h2>🧐 Usage</h2>
+<p align="center">
+  <a href="https://github.com/pytgcalls/ntgcalls"><img src="https://img.shields.io/badge/Built%20with-ntgcalls-8A2BE2?style=for-the-badge" alt="ntgcalls"></a>
+  <a href="https://github.com/yt-dlp/yt-dlp"><img src="https://img.shields.io/badge/Built%20with-yt--dlp-FF0000?style=for-the-badge" alt="yt-dlp"></a>
+  <a href="https://ffmpeg.org"><img src="https://img.shields.io/badge/Built%20with-FFmpeg-007808?style=for-the-badge" alt="FFmpeg"></a>
+  <a href="https://www.mongodb.com/"><img src="https://img.shields.io/badge/Built%20with-MongoDB-47A248?style=for-the-badge" alt="MongoDB"></a>
+  <a href="https://github.com/nlohmann/json"><img src="https://img.shields.io/badge/Built%20with-nlohmann%2Fjson-333333?style=for-the-badge" alt="nlohmann/json"></a>
+</p>
 
-1. Add the bot to your Telegram group.  
-2. Promote it to <b>admin</b> with invite users permission.  
-3. Use commands in the chat to control playback:
-<details>
-    <summary>Commands overview</summary>
-    <pre>
-/play [song name or link] -> Play audio in the videochat
-/vplay [song name or link] -> Play video in the videochat
-/pause -> Pause playback
-/resume -> Resume playback
-/skip -> Skip to next track
-/stop -> Stop playback
-/seek -> Seeks the stream
-/queue -> Show queue
-    </pre>
-</details>
+## Links
 
-<hr>
+<p align="center">
+  <a href="https://github.com/Badmunda05/NoxBeats"><img src="https://img.shields.io/badge/Source-GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="Source"></a>
+  <a href="https://t.me/PBXCHATS"><img src="https://img.shields.io/badge/Support-Telegram%20Group-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" alt="Support"></a>
+  <a href="https://t.me/PBX_UPDATE"><img src="https://img.shields.io/badge/Updates-Telegram%20Channel-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" alt="Updates"></a>
+  <a href="https://t.me/Badmundaxd"><img src="https://img.shields.io/badge/Owner-Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" alt="Owner"></a>
+</p>
 
-<h2>❤️ Contributing</h2>
+## License
 
-Contributions are welcome!
-
-1. Fork the repository.  
-2. Create your branch: <code>git checkout -b feature/new</code>.  
-4. Commit changes: <code>git commit -m 'New feature'</code>.  
-5. Push: <code>git push origin feature/new</code>
-6. Open a Pull Request.
-
-<hr>
-
-<h2>🗒️ License</h2>
-
-This project is licensed under the <b>MIT License</b> — see <a href="https://github.com/AnonymousX1025/AnonXMusic/blob/master/LICENSE">LICENSE</a> for details.
-
-<hr>
-
-<h2>🤞 Updates and support</h2>
-
-- <a href="https://fallenx.t.me">Updates channel</a>
-- <a href="https://DevilsHeavenMF.t.me">Support group</a>
-
-<hr>
-
-<h2>👀 Acknowledgements</h2>
-
-- Inspired by other open-source Telegram music bots.
-- Thanks to all the <a href="https://github.com/AnonymousX1025/AnonXMusic/graphs/contributors">contributors</a>.
-
-<hr>
-
-<div align="center">
-
-⭐ Enjoying the tunes? <b>Star the repo</b> — feedback keeps the rhythm going!
-
-</div>
+<p align="center">
+  <a href="https://github.com/Badmunda05/NoxBeats/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-View%20LICENSE-blue?style=for-the-badge" alt="License"></a>
+</p>
