@@ -14,10 +14,38 @@ find_package(ZLIB REQUIRED)
 find_package(mongoc-1.0 REQUIRED)     # libmongoc: MongoDB persistence
 
 # Real voice engine: libntgcalls as a SHARED library (the static build embeds its own libc++abi/BoringSSL, whose symbols
-# clash with libstdc++/OpenSSL and break C++ exceptions). Put libntgcalls.so in third_party/ntgcalls/lib and ntgcalls.h in
-# third_party/ntgcalls/include (the Dockerfile does this), then configure with -DWITH_NTGCALLS=ON.
-option(WITH_NTGCALLS "link libntgcalls (real voice chats)" OFF)
+# clash with libstdc++/OpenSSL and break C++ exceptions).
+#
+# libntgcalls is looked for (header ntgcalls.h + libntgcalls.so) in, in this order:
+#   1. the NTGCALLS_INCLUDE_DIR / NTGCALLS_LIBRARY_DIR environment variables (set by the Heroku C++ buildpack when
+#      NTGCALLS_URL or NTGCALLS_DIR is configured),
+#   2. ${NTGCALLS_DIR}/include and ${NTGCALLS_DIR}/lib (default: third_party/ntgcalls, which the Dockerfile fills).
+# If it is found, the real voice engine is enabled automatically. Pass -DWITH_NTGCALLS=OFF to build without it, or
+# -DWITH_NTGCALLS=ON to make a missing library a hard configure error instead of a silent voice-less build.
 set(NTGCALLS_DIR "${CMAKE_SOURCE_DIR}/third_party/ntgcalls" CACHE PATH "libntgcalls location")
+find_path(NTGCALLS_INCLUDE_DIR ntgcalls.h
+          HINTS "$ENV{NTGCALLS_INCLUDE_DIR}" "${NTGCALLS_DIR}/include" NO_DEFAULT_PATH)
+find_library(NTGCALLS_LIBRARY NAMES libntgcalls.so
+             HINTS "$ENV{NTGCALLS_LIBRARY_DIR}" "${NTGCALLS_DIR}/lib" NO_DEFAULT_PATH)
+if(NTGCALLS_INCLUDE_DIR AND NTGCALLS_LIBRARY)
+  set(_ntg_default ON)
+else()
+  set(_ntg_default OFF)
+endif()
+option(WITH_NTGCALLS "link libntgcalls (real voice chats)" ${_ntg_default})
+if(WITH_NTGCALLS AND NOT (NTGCALLS_INCLUDE_DIR AND NTGCALLS_LIBRARY))
+  message(FATAL_ERROR
+    "WITH_NTGCALLS=ON but libntgcalls was not found.\n"
+    "  ntgcalls.h   : ${NTGCALLS_INCLUDE_DIR}\n"
+    "  libntgcalls.so: ${NTGCALLS_LIBRARY}\n"
+    "Provide it under ${NTGCALLS_DIR} (include/ + lib/), or set the NTGCALLS_INCLUDE_DIR / NTGCALLS_LIBRARY_DIR "
+    "environment variables, or configure with -DWITH_NTGCALLS=OFF.")
+endif()
+if(WITH_NTGCALLS)
+  message(STATUS "libntgcalls: ${NTGCALLS_LIBRARY} (header dir: ${NTGCALLS_INCLUDE_DIR}) -> real voice engine ENABLED")
+else()
+  message(WARNING "libntgcalls not found: building WITHOUT the voice engine. The bot will exit at start-up.")
+endif()
 
 # bot logic (no Telegram / voice dependency): used by the binary and the tests
 file(GLOB_RECURSE BOT_SOURCES CONFIGURE_DEPENDS
@@ -31,15 +59,19 @@ target_compile_options(botcore PRIVATE -Wall -Wextra -Wno-unused-parameter)
 target_link_libraries(botcore PUBLIC Threads::Threads CURL::libcurl ZLIB::ZLIB mongo::mongoc_shared)
 if(WITH_NTGCALLS)
   target_compile_definitions(botcore PUBLIC WITH_NTGCALLS)
-  target_include_directories(botcore PUBLIC ${NTGCALLS_DIR}/include)
-  target_link_libraries(botcore PUBLIC ${NTGCALLS_DIR}/lib/libntgcalls.so)
+  target_include_directories(botcore PUBLIC ${NTGCALLS_INCLUDE_DIR})
+  target_link_libraries(botcore PUBLIC ${NTGCALLS_LIBRARY})
 endif()
 
 add_executable(cpp-bot Bad/main.cpp)
 target_link_libraries(cpp-bot PRIVATE botcore)
 if(WITH_NTGCALLS)
-  # finds libntgcalls.so in ./lib next to the binary (Docker: /app/lib) or in the build-time location
-  set_target_properties(cpp-bot PROPERTIES BUILD_RPATH "$ORIGIN/lib;${NTGCALLS_DIR}/lib" INSTALL_RPATH "$ORIGIN/lib")
+  get_filename_component(NTGCALLS_LIBRARY_DIR_RESOLVED "${NTGCALLS_LIBRARY}" DIRECTORY)
+  # finds libntgcalls.so in ./lib next to the binary (Docker: /app/lib), in ../third_party/ntgcalls/lib relative to
+  # the binary (buildpack layout: /app/build/cpp-bot), or in the build-time location
+  set_target_properties(cpp-bot PROPERTIES
+    BUILD_RPATH "$ORIGIN/lib;$ORIGIN/../third_party/ntgcalls/lib;${NTGCALLS_LIBRARY_DIR_RESOLVED}"
+    INSTALL_RPATH "$ORIGIN/lib")
 endif()
 
 # developer tests (not shipped in the deploy repo)
