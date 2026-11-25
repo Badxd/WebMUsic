@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Runs automatically by the C++ buildpack AFTER the cmake build
+# finishes, before it scans for shared libraries to bundle into the
+# slug / add to LD_LIBRARY_PATH.
+#
+# That scan only looks inside the build output directory (default:
+# build/), not third_party/ — so without this, libntgcalls.so would be
+# linked at build time but missing at runtime ("error while loading
+# shared libraries: libntgcalls.so: cannot open shared object file").
+set -euo pipefail
+
+BUILD_DIR_NAME="build"   # must match CPP_BUILD_DIR_NAME (default "build") in .cpp-buildpack
+
+if [[ -f "third_party/ntgcalls/lib/libntgcalls.so" && -d "${BUILD_DIR_NAME}" ]]; then
+    cp "third_party/ntgcalls/lib/libntgcalls.so" "${BUILD_DIR_NAME}/"
+    echo "-----> libntgcalls.so copied into ${BUILD_DIR_NAME}/ for runtime bundling"
+fi

@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# Runs automatically by the C++ buildpack BEFORE cmake configure.
+#
+# The C++ buildpack has no built-in knowledge of ntgcalls — it just
+# runs plain cmake/make. Only the Dockerfile path did this fetch step,
+# which is why the Heroku build was producing a binary with no voice
+# support ("this build has no libntgcalls"). This replicates exactly
+# what the Dockerfile does: download the prebuilt libntgcalls.so +
+# header for this architecture, and place them at
+# third_party/ntgcalls/{include,lib} — the exact default path
+# CMakeLists.txt's NTGCALLS_DIR option already points at, so no extra
+# -DNTGCALLS_DIR= override is needed, just -DWITH_NTGCALLS=ON (set via
+# CPP_CMAKE_ARGS in .cpp-buildpack).
+set -euo pipefail
+
+NTG_VERSION="v2.1.0"   # keep in sync with the Dockerfile's ARG NTG_VERSION
+
+ARCH="$(uname -m)"
+if [[ "${ARCH}" == "x86_64" ]]; then
+    NTG="x86_64"
+else
+    NTG="arm64"
+fi
+
+DEST_LIB="third_party/ntgcalls/lib"
+DEST_INC="third_party/ntgcalls/include"
+
+if [[ -f "${DEST_LIB}/libntgcalls.so" && -f "${DEST_INC}/ntgcalls.h" ]]; then
+    echo "-----> ntgcalls already vendored, skipping download"
+    exit 0
+fi
+
+echo "-----> Fetching libntgcalls ${NTG_VERSION} (${NTG}) for voice chat support"
+mkdir -p "${DEST_LIB}" "${DEST_INC}"
+
+TMP_DIR="$(mktemp -d)"
+trap 'rm -rf "${TMP_DIR}"' EXIT
+
+URL="https://github.com/pytgcalls/ntgcalls/releases/download/${NTG_VERSION}/ntgcalls.linux-${NTG}-shared_libs.zip"
+if ! curl -fsSL "${URL}" -o "${TMP_DIR}/ntg.zip"; then
+    echo "       Warning: could not download ${URL} — building WITHOUT voice chat support."
+    echo "       Check NTG_VERSION in bin/pre_compile and https://github.com/pytgcalls/ntgcalls/releases"
+    exit 0
+fi
+
+unzip -q "${TMP_DIR}/ntg.zip" -d "${TMP_DIR}/ntg"
+
+SO_FILE="$(find "${TMP_DIR}/ntg" -name 'libntgcalls.so' | head -n1)"
+H_FILE="$(find "${TMP_DIR}/ntg" -name 'ntgcalls.h' | head -n1)"
+
+if [[ -z "${SO_FILE}" || -z "${H_FILE}" ]]; then
+    echo "       Warning: libntgcalls.so / ntgcalls.h not found in the downloaded archive — building WITHOUT voice chat support."
+    exit 0
+fi
+
+cp "${SO_FILE}" "${DEST_LIB}/"
+cp "${H_FILE}" "${DEST_INC}/"
+echo "-----> libntgcalls ready at ${DEST_LIB}/libntgcalls.so"

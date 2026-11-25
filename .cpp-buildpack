@@ -1,13 +1,19 @@
-# For deploying with the C++ buildpack (not needed for the Dockerfile / container stack).
-CPP_BUILD_SYSTEM=cmake
-CPP_COMPILER=gcc
-CPP_DEPS=auto
-CPP_CMAKE_ARGS=-DWITH_NTGCALLS=ON
-CPP_CMAKE_TARGETS=cpp-bot
-CPP_EXECUTABLE=cpp-bot
-CPP_LAUNCH_MODE=supervise
+# Config for Badmunda05/heroku-buildpack-cpp.
+# See MUSIC_BOT_DEPLOYMENT.md in that buildpack's repo for the full
+# reference — this mirrors its example, adjusted to this project's
+# actual CMakeLists.txt (Threads, CURL, ZLIB, mongoc, nlohmann-json).
 
-# libntgcalls: third_party/ntgcalls/ is in your .gitignore, so it cannot simply be committed.
-# Use a pinned download instead (the SHA-256 is mandatory):
-NTGCALLS_URL=https://github.com/pytgcalls/ntgcalls/releases/download/v2.1.0/ntgcalls.linux-x86_64-shared_libs.zip
-# NTGCALLS_SHA256=<paste the output of: sha256sum ntgcalls.linux-x86_64-shared_libs.zip>
+# System/vendored libraries this project links against.
+CPP_DEPS=curl,zlib,mongoc,nlohmann-json
+
+# bin/pre_compile needs unzip to extract the ntgcalls release archive.
+CPP_APT_PACKAGES=unzip
+
+# bin/pre_compile fetches libntgcalls.so + ntgcalls.h into
+# third_party/ntgcalls/{lib,include} (CMakeLists.txt's own default
+# NTGCALLS_DIR) — so WITH_NTGCALLS=ON here is all that's needed, no
+# -DNTGCALLS_DIR= override.
+CPP_CMAKE_ARGS=-DWITH_NTGCALLS=ON
+
+# Must match the name bin/post_compile copies libntgcalls.so into.
+CPP_BUILD_DIR_NAME=build
