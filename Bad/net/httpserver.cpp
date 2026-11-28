@@ -91,11 +91,30 @@ bool read_file(const std::string& path, std::string& out) {
     return true;
 }
 
+// Truncates by UTF-8 *character* count, never mid-sequence. A plain
+// substr(0, N) cuts at a raw byte offset — fine for ASCII names, but
+// a name packed with emoji/combining marks/small-caps can easily get
+// sliced in the middle of a multi-byte sequence, producing invalid
+// UTF-8. nlohmann::json validates UTF-8 strictly in dump() and throws
+// on anything invalid — that exception is what was turning into the
+// 500s on /api/room for stylized Telegram display names.
+std::string utf8_truncate(const std::string& s, size_t max_chars) {
+    size_t chars = 0, i = 0;
+    while (i < s.size()) {
+        unsigned char c = static_cast<unsigned char>(s[i]);
+        size_t len = (c < 0x80) ? 1 : (c >> 5 == 0x6) ? 2 : (c >> 4 == 0xE) ? 3 : (c >> 3 == 0x1E) ? 4 : 1;
+        if (chars >= max_chars || i + len > s.size()) break;
+        i += len;
+        chars++;
+    }
+    return s.substr(0, i);
+}
+
 Person person_from_params(const std::map<std::string, std::string>& p) {
     Person person;
     auto get = [&](const char* k) { auto it = p.find(k); return it != p.end() ? it->second : std::string(); };
     try { person.user_id = get("user_id").empty() ? 0 : std::stoll(get("user_id")); } catch (...) {}
-    person.name = get("name").empty() ? "Guest" : get("name").substr(0, 40);
+    person.name = get("name").empty() ? "Guest" : utf8_truncate(get("name"), 40);
     person.username = get("username");
     person.photo_url = get("photo");
     return person;
@@ -176,7 +195,12 @@ Response route(const Request& req) {
     if (util::starts_with(req.path, "/api/room/")) {
         i64 chat_id = parse_chat_id(req.path.substr(10));
         Person viewer = person_from_params(req.params);
-        res.body = build_state(chat_id, viewer).dump();
+        // error_handler_t::replace: never throw on invalid UTF-8 (the
+        // utf8_truncate fix above prevents the known cause, this is a
+        // permanent safety net against any other source of bad bytes
+        // ending up in a title/name — replaces them with U+FFFD
+        // instead of crashing the request).
+        res.body = build_state(chat_id, viewer).dump(-1, ' ', false, json::error_handler_t::replace);
         return res;
     }
 
@@ -211,7 +235,7 @@ Response route(const Request& req) {
             Person p = person_from_params(req.params);
             std::string text;
             try { text = json::parse(req.body).value("text", ""); } catch (...) {}
-            if (text.size() > 300) text = text.substr(0, 300);
+            if (text.size() > 300) text = utf8_truncate(text, 300);
             if (!p.user_id || text.empty()) {
                 res.status = 400; res.body = json{{"ok", false}}.dump(); return res;
             }
@@ -222,7 +246,7 @@ Response route(const Request& req) {
         json out = json::array();
         for (auto& m : get_chat_log(chat_id))
             out.push_back(json{{"person", person_json(m.person)}, {"text", m.text}, {"ts", m.ts_ms}});
-        res.body = out.dump();
+        res.body = out.dump(-1, ' ', false, json::error_handler_t::replace);
         return res;
     }
 

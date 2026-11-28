@@ -12,7 +12,11 @@ CPP_DEPS=curl,zlib,mongoc,nlohmann-json
 # with "default_launcher: No such file or directory" the moment a
 # song tries to start (build succeeds either way, since this is only
 # needed at runtime, not compile time).
-CPP_APT_PACKAGES=unzip,ffmpeg
+# libpulse0 provides libpulsecommon-16.1.so — ffmpeg on this stack is
+# linked against PulseAudio (for its audio-output device support, even
+# though we never use that device) and refuses to even start without
+# it being resolvable, regardless of which codec path is actually used.
+CPP_APT_PACKAGES=unzip,ffmpeg,libpulse0
 
 # bin/pre_compile fetches libntgcalls.so + ntgcalls.h into
 # third_party/ntgcalls/{lib,include} (CMakeLists.txt's own default
